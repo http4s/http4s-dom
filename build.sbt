@@ -95,7 +95,8 @@ lazy val core = project
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-core" % http4sVersion,
-      "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
+      ("org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion).withCrossVersion(
+        CrossVersion.for3Use2_13)
     )
   )
   .enablePlugins(ScalaJSPlugin)
