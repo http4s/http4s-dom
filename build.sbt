@@ -88,7 +88,6 @@ lazy val root =
 
 lazy val core = project
   .in(file("core"))
-  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "http4s-dom-core",
     description := "Base library for dom http4s client and apps",
@@ -96,14 +95,14 @@ lazy val core = project
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-core" % http4sVersion,
-      ("org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion)
-        .withCrossVersion(CrossVersion.for3Use2_13)
+      ("org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion).withCrossVersion(
+        CrossVersion.for3Use2_13)
     )
   )
+  .enablePlugins(ScalaJSPlugin)
 
 lazy val fetchClient = project
   .in(file("fetch-client"))
-  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "http4s-dom-fetch-client",
     description := "browser fetch implementation for http4s clients",
@@ -112,10 +111,10 @@ lazy val fetchClient = project
     )
   )
   .dependsOn(core)
+  .enablePlugins(ScalaJSPlugin)
 
 lazy val serviceWorker = project
   .in(file("service-worker"))
-  .enablePlugins(ScalaJSPlugin)
   .settings(
     name := "http4s-dom-fetch-client",
     description := "browser service worker implementation for http4s apps",
@@ -124,10 +123,10 @@ lazy val serviceWorker = project
     )
   )
   .dependsOn(core)
+  .enablePlugins(ScalaJSPlugin)
 
 lazy val tests = project
   .in(file("tests"))
-  .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
   .settings(
     scalaJSUseMainModuleInitializer := true,
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
@@ -139,3 +138,4 @@ lazy val tests = project
     )
   )
   .dependsOn(serviceWorker, fetchClient % Test)
+  .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
