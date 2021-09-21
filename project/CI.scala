@@ -31,7 +31,7 @@ sealed abstract class CI(
         "scalafmtCheck",
         "clean"
       ) ++ testCommands ++ List(
-        jsEnv.fold("")(_ => s"set Global / useJSEnv := JSEnv.NodeJS"),
+        jsEnv.fold("")(_ => s"set Global / useJSEnv := JSEnv.Chrome"),
         if (mimaReport) "mimaReportBinaryIssues" else ""
       )).filter(_.nonEmpty) ++ suffixCommands
 
