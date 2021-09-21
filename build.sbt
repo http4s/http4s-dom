@@ -40,7 +40,7 @@ ThisBuild / scmInfo := Some(
     url("https://github.com/http4s/http4s-dom"),
     "https://github.com/http4s/http4s-dom.git"))
 
-ThisBuild / crossScalaVersions := Seq("3.0.2", "2.12.15", "2.13.6")
+ThisBuild / crossScalaVersions := Seq( /*"3.0.2",*/ "2.12.15", "2.13.6")
 
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
@@ -95,8 +95,7 @@ lazy val core = project
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-core" % http4sVersion,
-      ("org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion).withCrossVersion(
-        CrossVersion.for3Use2_13)
+      "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
     )
   )
   .enablePlugins(ScalaJSPlugin)
