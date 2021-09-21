@@ -12,8 +12,8 @@ Use http4s in your browser with Scala.js!
 
 ```sbt
 libraryDependencies ++= Seq(
-  "org.http4s" %%% "http4s-dom-core" % "1.0.0-M25",
-  "org.http4s" %%% "http4s-dom-fetch-client" % "1.0.0-M25",
-  "org.http4s" %%% "http4s-dom-service-worker" % "1.0.0-M25",
+  "org.http4s" %%% "http4s-dom-core" % "1.0.0-M27",
+  "org.http4s" %%% "http4s-dom-fetch-client" % "1.0.0-M27",
+  "org.http4s" %%% "http4s-dom-service-worker" % "1.0.0-M27",
 )
 ```
