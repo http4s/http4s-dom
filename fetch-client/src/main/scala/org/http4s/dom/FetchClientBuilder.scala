@@ -125,7 +125,7 @@ sealed abstract class FetchClientBuilder[F[_]] private (
     withReferrerPolicyOption(None)
 
   /**
-   * Creates a [[Client]].
+   * Creates a `Client`.
    */
   def create: Client[F] = FetchClient.makeClient(
     requestTimeout,

@@ -26,7 +26,7 @@ import org.http4s.util.Writer
  *   - "about:client"
  *   - the empty string
  *
- * To ensure same-origin URLs, we only allow relative URLs in the form of [[Uri.Path]].
+ * To ensure same-origin URLs, we only allow relative URLs in the form of `Uri.Path`.
  *
  * See https://fetch.spec.whatwg.org/#ref-for-dom-request-referrer%E2%91%A0
  */
