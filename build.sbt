@@ -48,18 +48,51 @@ addCommandAlias("ciChrome", CI.Chrome.toString)
 
 addCommandAlias("prePR", "; root/clean; scalafmtSbt; +root/scalafmtAll; +root/headerCreate")
 
-ThisBuild / githubWorkflowBuildPreamble +=
-  WorkflowStep.Run(
-    List("./scripts/static_server.py &"),
-    name = Some("Start static file server"))
-
 lazy val useJSEnv = settingKey[JSEnv]("Browser for running Scala.js tests")
 Global / useJSEnv := Chrome
+
+lazy val fileServicePort = settingKey[Int]("Port for static file server")
+Global / fileServicePort := {
+  import cats.data.Kleisli
+  import cats.effect.IO
+  import cats.effect.unsafe.implicits.global
+  import com.comcast.ip4s.Port
+  import org.http4s.ember.server.EmberServerBuilder
+  import org.http4s.server.staticcontent._
+
+  (for {
+    deferredPort <- IO.deferred[Int]
+    _ <- EmberServerBuilder
+      .default[IO]
+      .withPort(Port.fromInt(0).get)
+      .withHttpApp {
+        Kleisli { req =>
+          fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
+            // TODO find out why mime type is not auto-inferred
+            if (req.uri.renderString.endsWith(".js"))
+              res.withHeaders(
+                "Service-Worker-Allowed" -> "/",
+                "Content-Type" -> "text/javascript"
+              )
+            else res
+          }
+        }
+      }
+      .build
+      .map(_.address.getPort)
+      .evalTap(deferredPort.complete(_))
+      .useForever
+      .start
+    port <- deferredPort.get
+  } yield port).unsafeRunSync()
+}
 
 ThisBuild / Test / jsEnv := {
   val config = SeleniumJSEnv
     .Config()
-    .withMaterializeInServer("target/selenium", "http://localhost:8888/target/selenium/")
+    .withMaterializeInServer(
+      "target/selenium",
+      s"http://localhost:${fileServicePort.value}/target/selenium/")
 
   useJSEnv.value match {
     case Chrome =>

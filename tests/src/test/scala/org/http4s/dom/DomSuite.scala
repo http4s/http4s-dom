@@ -42,7 +42,7 @@ class DomSuite extends CatsEffectSuite {
 
   val client = FetchClientBuilder[IO].create
 
-  val baseUrl = uri"http://localhost:8888"
+  val baseUrl = uri"/"
 
   test("Install service worker") {
     IO.fromPromise {
