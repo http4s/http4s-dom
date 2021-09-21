@@ -42,8 +42,8 @@ object ServiceWorker {
   /**
    * Adds a listener for `FetchEvent`. The provided `IO` is run once to install the `routes`. If
    * the event is not intercepted by `routes` then it is treated as an ordinary request.
-   * Additional context can be retrieved via [[FetchEventContext]] including a [[Supervisor]]
-   * for running background tasks.
+   * Additional context can be retrieved via [[FetchEventContext]] including a
+   * [[cats.effect.std.Supervisor]] for running background tasks.
    * @return
    *   an action for removing the listener.
    */
