@@ -148,7 +148,7 @@ lazy val fetchClient = project
 lazy val serviceWorker = project
   .in(file("service-worker"))
   .settings(
-    name := "http4s-dom-fetch-client",
+    name := "http4s-dom-service-worker",
     description := "browser service worker implementation for http4s apps",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion
