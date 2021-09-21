@@ -25,7 +25,7 @@ import org.http4s.Status._
 import scala.concurrent.duration._
 
 object TestRoutes {
-  def apply[F[_]](implicit F: Async[F]): HttpRoutes[F] = HttpRoutes.of { request =>
+  def apply[F[_]](implicit F: Async[F]): HttpRoutes[F] = HttpRoutes.of { case request =>
     val get = Some(request).filter(_.method == Method.GET).flatMap { r =>
       GetRoutes.getPaths.get(r.uri.path.segments.last.toString)
     }
