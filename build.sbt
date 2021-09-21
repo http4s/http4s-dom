@@ -23,7 +23,7 @@ import JSEnv._
 
 name := "http4s-dom"
 
-ThisBuild / baseVersion := "0.1"
+ThisBuild / baseVersion := "1.0"
 
 ThisBuild / organization := "org.http4s"
 ThisBuild / organizationName := "http4s.org"
@@ -31,7 +31,7 @@ ThisBuild / publishGithubUser := "armanbilge"
 ThisBuild / publishFullName := "Arman Bilge"
 
 enablePlugins(SonatypeCiReleasePlugin)
-ThisBuild / spiewakCiReleaseSnapshots := false
+ThisBuild / spiewakCiReleaseSnapshots := true
 ThisBuild / spiewakMainBranches := Seq("main")
 
 ThisBuild / homepage := Some(url("https://github.com/http4s/http4s-dom"))
