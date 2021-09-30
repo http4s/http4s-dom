@@ -111,7 +111,7 @@ val fs2Version = "3.1.3"
 val http4sVersion = "1.0.0-M27"
 val scalaJSDomVersion = "1.2.0"
 val munitVersion = "0.7.29"
-val munitCEVersion = "1.0.5"
+val munitCEVersion = "1.0.6"
 
 lazy val root =
   project
