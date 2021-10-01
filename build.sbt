@@ -112,7 +112,7 @@ val catsEffectVersion = "3.2.9"
 val fs2Version = "3.1.3"
 val http4sVersion = "1.0.0-M27"
 val scalaJSDomVersion = "1.2.0"
-val scalaJSDomVersion_2 = "1.2.0" // ? is it published
+val scalaJSDomVersion_2 = "1.1.0+366-6b9243ee-SNAPSHOT"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.6"
 
@@ -137,9 +137,10 @@ lazy val core = projectMatrix
         if (virtualAxes.value.contains(JSDomVersion.V2))
           "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion_2
         else
-          "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion_2
+          "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
       }
-    )
+    ),
+    resolvers += Resolver.sonatypeRepo("snapshots")
   )
   .enablePlugins(ScalaJSPlugin)
 
