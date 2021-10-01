@@ -40,6 +40,8 @@ ThisBuild / scmInfo := Some(
     url("https://github.com/http4s/http4s-dom"),
     "https://github.com/http4s/http4s-dom.git"))
 
+val AllScalaVersions = Seq("2.12.15", "2.13.6")
+
 ThisBuild / crossScalaVersions := Seq( /*"3.0.2",*/ "2.12.15", "2.13.6")
 
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
@@ -110,31 +112,41 @@ val catsEffectVersion = "3.2.9"
 val fs2Version = "3.1.3"
 val http4sVersion = "1.0.0-M27"
 val scalaJSDomVersion = "1.2.0"
+val scalaJSDomVersion_2 = "1.2.0" // ? is it published
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.6"
 
 lazy val root =
   project
     .in(file("."))
-    .aggregate(core, fetchClient, serviceWorker, tests)
+    .aggregate(
+      (core.projectRefs ++ fetchClient.projectRefs ++ serviceWorker.projectRefs ++ tests.projectRefs): _*)
     .enablePlugins(NoPublishPlugin)
 
-lazy val core = project
+lazy val core = projectMatrix
   .in(file("core"))
+  .customRow(AllScalaVersions, Seq(VirtualAxis.js, JSDomVersion.V1), Seq.empty)
+  .customRow(AllScalaVersions, Seq(VirtualAxis.js, JSDomVersion.V2), Seq.empty)
   .settings(
     name := "http4s-dom-core",
     description := "Base library for dom http4s client and apps",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
       "co.fs2" %%% "fs2-core" % fs2Version,
-      "org.http4s" %%% "http4s-core" % http4sVersion,
-      "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
+      "org.http4s" %%% "http4s-core" % http4sVersion, {
+        if (virtualAxes.value.contains(JSDomVersion.V2))
+          "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion_2
+        else
+          "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion_2
+      }
     )
   )
   .enablePlugins(ScalaJSPlugin)
 
-lazy val fetchClient = project
+lazy val fetchClient = projectMatrix
   .in(file("fetch-client"))
+  .customRow(AllScalaVersions, Seq(VirtualAxis.js, JSDomVersion.V1), Seq.empty)
+  .customRow(AllScalaVersions, Seq(VirtualAxis.js, JSDomVersion.V2), Seq.empty)
   .settings(
     name := "http4s-dom-fetch-client",
     description := "browser fetch implementation for http4s clients",
@@ -145,8 +157,10 @@ lazy val fetchClient = project
   .dependsOn(core)
   .enablePlugins(ScalaJSPlugin)
 
-lazy val serviceWorker = project
+lazy val serviceWorker = projectMatrix
   .in(file("service-worker"))
+  .customRow(AllScalaVersions, Seq(VirtualAxis.js, JSDomVersion.V1), Seq.empty)
+  .customRow(AllScalaVersions, Seq(VirtualAxis.js, JSDomVersion.V2), Seq.empty)
   .settings(
     name := "http4s-dom-service-worker",
     description := "browser service worker implementation for http4s apps",
@@ -157,8 +171,10 @@ lazy val serviceWorker = project
   .dependsOn(core)
   .enablePlugins(ScalaJSPlugin)
 
-lazy val tests = project
+lazy val tests = projectMatrix
   .in(file("tests"))
+  .customRow(AllScalaVersions, Seq(VirtualAxis.js, JSDomVersion.V1), Seq.empty)
+  .customRow(AllScalaVersions, Seq(VirtualAxis.js, JSDomVersion.V2), Seq.empty)
   .settings(
     scalaJSUseMainModuleInitializer := true,
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
