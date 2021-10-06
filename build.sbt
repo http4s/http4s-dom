@@ -114,47 +114,20 @@ val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.6"
 
 lazy val root =
-  project
-    .in(file("."))
-    .aggregate(core, fetchClient, serviceWorker, tests)
-    .enablePlugins(NoPublishPlugin)
+  project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
 
-lazy val core = project
-  .in(file("core"))
+lazy val dom = project
+  .in(file("dom"))
   .settings(
-    name := "http4s-dom-core",
-    description := "Base library for dom http4s client and apps",
+    name := "http4s-dom",
+    description := "http4s browser integrations",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
+      "org.typelevel" %%% "cats-effect" % catsEffectVersion,
       "co.fs2" %%% "fs2-core" % fs2Version,
-      "org.http4s" %%% "http4s-core" % http4sVersion,
+      "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
     )
   )
-  .enablePlugins(ScalaJSPlugin)
-
-lazy val fetchClient = project
-  .in(file("fetch-client"))
-  .settings(
-    name := "http4s-dom-fetch-client",
-    description := "browser fetch implementation for http4s clients",
-    libraryDependencies ++= Seq(
-      "org.http4s" %%% "http4s-client" % http4sVersion
-    )
-  )
-  .dependsOn(core)
-  .enablePlugins(ScalaJSPlugin)
-
-lazy val serviceWorker = project
-  .in(file("service-worker"))
-  .settings(
-    name := "http4s-dom-service-worker",
-    description := "browser service worker implementation for http4s apps",
-    libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-effect" % catsEffectVersion
-    )
-  )
-  .dependsOn(core)
   .enablePlugins(ScalaJSPlugin)
 
 lazy val tests = project
@@ -169,5 +142,5 @@ lazy val tests = project
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
     )
   )
-  .dependsOn(serviceWorker, fetchClient % Test)
+  .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
