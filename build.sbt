@@ -31,8 +31,7 @@ ThisBuild / publishGithubUser := "armanbilge"
 ThisBuild / publishFullName := "Arman Bilge"
 
 enablePlugins(SonatypeCiReleasePlugin)
-ThisBuild / spiewakCiReleaseSnapshots := true
-ThisBuild / spiewakMainBranches := Seq("main")
+ThisBuild / githubWorkflowTargetBranches := Seq("series/0.1")
 
 ThisBuild / homepage := Some(url("https://github.com/http4s/http4s-dom"))
 ThisBuild / scmInfo := Some(
@@ -40,7 +39,7 @@ ThisBuild / scmInfo := Some(
     url("https://github.com/http4s/http4s-dom"),
     "https://github.com/http4s/http4s-dom.git"))
 
-ThisBuild / crossScalaVersions := Seq( /*"3.0.2",*/ "2.12.15", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.6")
 
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
