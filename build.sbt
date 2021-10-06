@@ -23,7 +23,7 @@ import JSEnv._
 
 name := "http4s-dom"
 
-ThisBuild / baseVersion := "1.0"
+ThisBuild / baseVersion := "0.1"
 
 ThisBuild / organization := "org.http4s"
 ThisBuild / organizationName := "http4s.org"
