@@ -45,7 +45,7 @@ object FetchEventContext {
       event.clientId,
       event.resultingClientId,
       OptionT(F.fromPromise(F.pure(event.preloadResponse)).map(_.toOption))
-        .semiflatMap(fromResponse[F])
+        .semiflatMap(fromDomResponse[F])
         .value,
       supervisor
     )

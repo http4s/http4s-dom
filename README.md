@@ -1,19 +1,15 @@
 # http4s-dom
 
 Use http4s in your browser with Scala.js!
+Features:
 
-### Modules
+* A `Client` implementation backed by [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+* A [`Service Worker`](https://developer.mozilla.org/en-US/docs/Web/API/Service_Worker_API) integration to install your `HttpRoutes` as a [`FetchEvent` handler](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/onfetch)
+* Encoders for [`File`](https://developer.mozilla.org/en-US/docs/Web/API/File), [`Blob`](https://developer.mozilla.org/en-US/docs/Web/API/Blob) and [`ReadableStream`](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream)
 
-* `core`: encoders for [`File`](https://developer.mozilla.org/en-US/docs/Web/API/File) and other [`ReadableStream`](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream)s
-* `fetch-client`: a `Client` implementation backed by [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
-* `service-worker`: install your `HttpRoutes` as a [`FetchEvent`](https://developer.mozilla.org/en-US/docs/Web/API/FetchEvent) listener
 
 ### Usage
 
 ```sbt
-libraryDependencies ++= Seq(
-  "org.http4s" %%% "http4s-dom-core" % "1.0.0-M27",
-  "org.http4s" %%% "http4s-dom-fetch-client" % "1.0.0-M27",
-  "org.http4s" %%% "http4s-dom-service-worker" % "1.0.0-M27",
-)
+libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.1.0"
 ```

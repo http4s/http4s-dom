@@ -89,7 +89,7 @@ private[dom] object FetchClient {
           case (r, exitCase) =>
             closeReadableStream(r.body, exitCase)
         }
-        .evalMap(fromResponse[F])
+        .evalMap(fromDomResponse[F])
 
     }
   }
