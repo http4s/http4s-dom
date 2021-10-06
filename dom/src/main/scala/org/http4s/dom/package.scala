@@ -20,6 +20,8 @@ import cats.effect.kernel.Async
 import cats.effect.kernel.Resource
 import cats.syntax.all._
 import fs2.Stream
+import org.scalajs.dom.Blob
+import org.scalajs.dom.File
 import org.scalajs.dom.experimental.ReadableStream
 import org.scalajs.dom.experimental.{Headers => DomHeaders}
 import org.scalajs.dom.experimental.{Response => DomResponse}
@@ -28,6 +30,23 @@ import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.typedarray.Uint8Array
 
 package object dom {
+
+  implicit def fileEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, File] =
+    blobEncoder.narrow
+
+  implicit def blobEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, Blob] =
+    EntityEncoder.entityBodyEncoder.contramap { blob =>
+      Stream
+        .bracketCase {
+          // lol, the facade is still broken. next time
+          F.delay(blob.stream().asInstanceOf[ReadableStream[Uint8Array]])
+        } { case (rs, exitCase) => closeReadableStream(rs, exitCase) }
+        .flatMap(fromReadableStream[F])
+    }
+
+  implicit def readableStreamEncoder[F[_]: Async]
+      : EntityEncoder[F, ReadableStream[Uint8Array]] =
+    EntityEncoder.entityBodyEncoder.contramap { rs => fromReadableStream(rs) }
 
   private[dom] def fromResponse[F[_]](response: DomResponse)(
       implicit F: Async[F]): F[Response[F]] =
