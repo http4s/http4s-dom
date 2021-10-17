@@ -23,7 +23,7 @@ import JSEnv._
 
 name := "http4s-dom"
 
-ThisBuild / baseVersion := "0.1"
+ThisBuild / baseVersion := "0.2"
 
 ThisBuild / organization := "org.http4s"
 ThisBuild / organizationName := "http4s.org"
@@ -39,7 +39,7 @@ ThisBuild / scmInfo := Some(
     url("https://github.com/http4s/http4s-dom"),
     "https://github.com/http4s/http4s-dom.git"))
 
-ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "3.0.2", "2.13.6")
 
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
@@ -108,7 +108,7 @@ ThisBuild / Test / jsEnv := {
 val catsEffectVersion = "3.2.9"
 val fs2Version = "3.1.5"
 val http4sVersion = "0.23.6"
-val scalaJSDomVersion = "1.2.0"
+val scalaJSDomVersion = "2.0.0-RC1"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.6"
 
@@ -125,7 +125,8 @@ lazy val dom = project
       "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    )
+    ),
+    dependencyOverrides += "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
   )
   .enablePlugins(ScalaJSPlugin)
 
@@ -139,7 +140,8 @@ lazy val tests = project
     libraryDependencies ++= Seq(
       "org.scalameta" %%% "munit" % munitVersion % Test,
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
-    )
+    ),
+    dependencyOverrides += "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
   )
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)

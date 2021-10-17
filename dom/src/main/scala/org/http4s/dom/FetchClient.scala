@@ -24,13 +24,12 @@ import cats.effect.syntax.all._
 import cats.syntax.all._
 import org.http4s.client.Client
 import org.http4s.headers.Referer
-import org.scalajs.dom.crypto._
-import org.scalajs.dom.experimental.AbortController
-import org.scalajs.dom.experimental.Fetch
-import org.scalajs.dom.experimental.Headers
-import org.scalajs.dom.experimental.HttpMethod
-import org.scalajs.dom.experimental.RequestInit
-import org.scalajs.dom.experimental.{Response => FetchResponse}
+import org.scalajs.dom.AbortController
+import org.scalajs.dom.Fetch
+import org.scalajs.dom.Headers
+import org.scalajs.dom.HttpMethod
+import org.scalajs.dom.RequestInit
+import org.scalajs.dom.{Response => FetchResponse}
 
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration._
@@ -52,7 +51,7 @@ private[dom] object FetchClient {
 
             init.method = req.method.name.asInstanceOf[HttpMethod]
             init.headers = new Headers(toDomHeaders(req.headers))
-            body.foreach { body => init.body = arrayBuffer2BufferSource(body.toJSArrayBuffer) }
+            body.foreach { body => init.body = body.toJSArrayBuffer }
             init.signal = abortController.signal
             mergedOptions.cache.foreach(init.cache = _)
             mergedOptions.credentials.foreach(init.credentials = _)

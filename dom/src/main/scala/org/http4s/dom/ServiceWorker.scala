@@ -28,13 +28,12 @@ import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
-import org.scalajs.dom.crypto._
-import org.scalajs.dom.experimental.Body
-import org.scalajs.dom.experimental.Fetch
-import org.scalajs.dom.experimental.ResponseInit
-import org.scalajs.dom.experimental.serviceworkers.FetchEvent
-import org.scalajs.dom.experimental.serviceworkers.ServiceWorkerGlobalScope
-import org.scalajs.dom.experimental.{Response => DomResponse}
+import org.scalajs.dom.Body
+import org.scalajs.dom.Fetch
+import org.scalajs.dom.ResponseInit
+import org.scalajs.dom.FetchEvent
+import org.scalajs.dom.ServiceWorkerGlobalScope
+import org.scalajs.dom.{Response => DomResponse}
 import org.typelevel.vault.Key
 
 object ServiceWorker {
@@ -91,15 +90,15 @@ object ServiceWorker {
         response <- routes(request)
         body <- OptionT.liftF(
           OptionT(response.body.chunkAll.filter(_.nonEmpty).compile.last).map { chunk =>
-            arrayBuffer2BufferSource(chunk.toJSArrayBuffer)
+            chunk.toJSArrayBuffer
           }.value)
       } yield new DomResponse(
         body.getOrElse(null),
-        ResponseInit(
-          response.status.code,
-          response.status.reason,
-          toDomHeaders(response.headers)
-        )
+        new ResponseInit {
+          var status = response.status.code
+          var statusText = response.status.reason
+          var headers = toDomHeaders(response.headers)
+        }
       )
     }
 

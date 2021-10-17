@@ -26,8 +26,7 @@ import org.http4s.client.dsl.io._
 import org.http4s.multipart.Multipart
 import org.http4s.multipart.Part
 import org.http4s.syntax.all._
-import org.scalajs.dom.experimental.serviceworkers._
-import org.scalajs.dom.raw.Event
+import org.scalajs.dom.Event
 import org.scalajs.dom.window
 
 import scala.concurrent.duration._
