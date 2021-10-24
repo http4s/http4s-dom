@@ -31,7 +31,7 @@ ThisBuild / publishGithubUser := "armanbilge"
 ThisBuild / publishFullName := "Arman Bilge"
 
 enablePlugins(SonatypeCiReleasePlugin)
-ThisBuild / githubWorkflowTargetBranches := Seq("series/0.1")
+ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 
 ThisBuild / homepage := Some(url("https://github.com/http4s/http4s-dom"))
 ThisBuild / scmInfo := Some(
@@ -39,7 +39,7 @@ ThisBuild / scmInfo := Some(
     url("https://github.com/http4s/http4s-dom"),
     "https://github.com/http4s/http4s-dom.git"))
 
-ThisBuild / crossScalaVersions := Seq("2.12.15", "3.0.2", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.6")
 
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
@@ -122,11 +122,10 @@ lazy val dom = project
     description := "http4s browser integrations",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
-      "co.fs2" %%% "fs2-core" % fs2Version,
+      "co.fs2" %%% "fs2-io" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
     ),
-    dependencyOverrides += "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
   )
   .enablePlugins(ScalaJSPlugin)
 
@@ -141,7 +140,6 @@ lazy val tests = project
       "org.scalameta" %%% "munit" % munitVersion % Test,
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
     ),
-    dependencyOverrides += "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
   )
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
