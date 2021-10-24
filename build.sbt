@@ -152,6 +152,7 @@ lazy val jsdocs =
   project
     .dependsOn(dom)
     .settings(
+      fatalWarningsInCI := false, // Remove once mdocjs bumps to sjs-dom v2
       libraryDependencies ++= Seq(
         "org.http4s" %%% "http4s-circe" % http4sVersion,
         "io.circe" %%% "circe-generic" % "0.15.0-M1"
