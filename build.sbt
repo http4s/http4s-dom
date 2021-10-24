@@ -39,7 +39,8 @@ ThisBuild / scmInfo := Some(
     url("https://github.com/http4s/http4s-dom"),
     "https://github.com/http4s/http4s-dom.git"))
 
-ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.6")
+val scala3 = "3.1.0"
+ThisBuild / crossScalaVersions := Seq("2.12.15", scala3, "2.13.6")
 
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
@@ -147,7 +148,17 @@ lazy val tests = project
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
 
-lazy val jsdocs = project.dependsOn(dom)
+lazy val jsdocs =
+  project
+    .dependsOn(dom)
+    .settings(
+      libraryDependencies ++= Seq(
+        "org.http4s" %%% "http4s-circe" % http4sVersion,
+        "io.circe" %%% "circe-generic" % "0.15.0-M1"
+      )
+    )
+    .enablePlugins(ScalaJSPlugin)
+
 lazy val docs =
   project
     .in(file("mdocs"))
