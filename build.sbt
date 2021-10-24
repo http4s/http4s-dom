@@ -159,14 +159,72 @@ lazy val jsdocs =
     )
     .enablePlugins(ScalaJSPlugin)
 
+import laika.ast.Path.Root
+import laika.ast._
+import laika.ast.LengthUnit._
+import laika.helium.Helium
+import laika.helium.config.{HeliumIcon, IconLink, ImageLink, ReleaseInfo, Teaser, TextLink}
+import laika.theme.config.Color
+
 lazy val docs =
   project
     .in(file("mdocs"))
     .settings(
       mdocJS := Some(jsdocs),
-      mdocVariables := Map(
-        "VERSION" -> (if (isSnapshot.value)
-                        git.baseVersion.value
-                      else
-                        version.value)))
-    .enablePlugins(MdocPlugin)
+      Laika / sourceDirectories := Seq(mdocOut.value),
+      laikaConfig ~= { _.withRawContent },
+      laikaExtensions ++= Seq(
+        laika.markdown.github.GitHubFlavor,
+        laika.parse.code.SyntaxHighlighting
+      ),
+      laikaTheme := Helium
+        .defaults
+        .all
+        .metadata(
+          language = Some("en"),
+          title = Some("http4s-dom")
+        )
+        .site
+        .layout(
+          contentWidth = px(860),
+          navigationWidth = px(275),
+          topBarHeight = px(35),
+          defaultBlockSpacing = px(10),
+          defaultLineHeight = 1.5,
+          anchorPlacement = laika.helium.config.AnchorPlacement.Right
+        )
+        .site
+        .themeColors(
+          primary = Color.hex("5B7980"),
+          secondary = Color.hex("cc6600"),
+          primaryMedium = Color.hex("a7d4de"),
+          primaryLight = Color.hex("e9f1f2"),
+          text = Color.hex("5f5f5f"),
+          background = Color.hex("ffffff"),
+          bgGradient =
+            (Color.hex("334044"), Color.hex("5B7980")) // only used for landing page background
+        )
+        .site
+        .darkMode
+        .disabled
+        .site
+        .topNavigationBar(
+          homeLink = ImageLink.external(
+            "https://http4s.org",
+            Image.external("https://http4s.org/v1.0/images/http4s-logo-text-dark-2.svg")),
+          navLinks = Seq(
+            IconLink.external(
+              "https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/index.html",
+              HeliumIcon.api,
+              options = Styles("svg-link")),
+            IconLink.external(
+              "https://github.com/http4s/http4s-dom",
+              HeliumIcon.github,
+              options = Styles("svg-link")),
+            IconLink.external("https://discord.gg/XF3CXcMzqD", HeliumIcon.chat),
+            IconLink.external("https://twitter.com/http4s", HeliumIcon.twitter)
+          )
+        )
+        .build
+    )
+    .enablePlugins(MdocPlugin, LaikaPlugin)
