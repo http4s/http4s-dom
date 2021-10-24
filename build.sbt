@@ -166,12 +166,15 @@ import laika.helium.Helium
 import laika.helium.config.{HeliumIcon, IconLink, ImageLink, ReleaseInfo, Teaser, TextLink}
 import laika.theme.config.Color
 
+Global / excludeLintKeys += laikaDescribe
+
 lazy val docs =
   project
     .in(file("mdocs"))
     .settings(
       mdocJS := Some(jsdocs),
       Laika / sourceDirectories := Seq(mdocOut.value),
+      laikaDescribe := "<disabled>",
       laikaConfig ~= { _.withRawContent },
       laikaExtensions ++= Seq(
         laika.markdown.github.GitHubFlavor,
