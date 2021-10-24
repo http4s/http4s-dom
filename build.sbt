@@ -125,7 +125,7 @@ lazy val dom = project
       "co.fs2" %%% "fs2-io" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    ),
+    )
   )
   .enablePlugins(ScalaJSPlugin)
 
@@ -139,7 +139,7 @@ lazy val tests = project
     libraryDependencies ++= Seq(
       "org.scalameta" %%% "munit" % munitVersion % Test,
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
-    ),
+    )
   )
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
