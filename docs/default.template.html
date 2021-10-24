@@ -29,8 +29,20 @@
 
     <header id="top-bar">
 
-      <div class="row">
-        
+      <!-- visibility trickery, for layout to match http4s.org -->
+      <div class="row" style="visibility:hidden">
+        <a id="nav-icon">
+          @:icon(navigationMenu)
+        </a>
+        <div id="version-menu-container">
+          <a id="version-menu-toggle" class="text-link drop-down-toggle" href="#">
+            Version 1.0
+          </a>
+          <nav id="version-menu">
+            <ul id="version-list" class="nav-list">
+            </ul>
+          </nav>
+        </div>
       </div>
   
       ${?helium.topBar.home}
@@ -51,7 +63,6 @@
 
       <ul class="nav-list">
         <li class="level1 nav-header">Related Projects</li>
-        <li class="level2"><a href="https://github.com/http4s/http4s">http4s</a></li>
         <li class="level2"><a href="https://github.com/http4s/blaze">blaze</a></li>
         <li class="level2"><a href="https://jdk-http-client.http4s.org/">http4s-jdk-http-client</a></li>
         <li class="level2"><a href="https://github.com/http4s/rho">rho</a></li>
