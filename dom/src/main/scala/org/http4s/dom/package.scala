@@ -39,8 +39,7 @@ package object dom {
     EntityEncoder.entityBodyEncoder.contramap { blob =>
       Stream
         .bracketCase {
-          // lol, the facade is still broken. next time
-          F.delay(blob.stream().asInstanceOf[ReadableStream[Uint8Array]])
+          F.delay(blob.stream())
         } { case (rs, exitCase) => closeReadableStream(rs, exitCase) }
         .flatMap(fromReadableStream[F])
     }

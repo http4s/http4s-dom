@@ -28,7 +28,6 @@ import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
-import org.scalajs.dom.Body
 import org.scalajs.dom.Fetch
 import org.scalajs.dom.ResponseInit
 import org.scalajs.dom.FetchEvent
@@ -80,10 +79,7 @@ object ServiceWorker {
         uri <- OptionF.fromEither(Uri.fromString(req.url))
         headers = fromDomHeaders(req.headers)
         body = Stream
-          .evalUnChunk(
-            // TODO remove cast after next scala-js-dom release
-            F.fromPromise(F.delay(req.asInstanceOf[Body].arrayBuffer()))
-              .map(Chunk.jsArrayBuffer))
+          .evalUnChunk(F.fromPromise(F.delay(req.arrayBuffer())).map(Chunk.jsArrayBuffer))
           .covary[F]
         request = Request(method, uri, headers = headers, body = body)
           .withAttribute(key, FetchEventContext(event, supervisor))
