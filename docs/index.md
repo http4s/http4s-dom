@@ -1,7 +1,7 @@
 # http4s-dom
 
 Installation:
-```sbt
+```scala
 // supports http4s 0.23.x and scala-js-dom 2.x
 libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.2.0"
 
@@ -9,7 +9,8 @@ libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.2.0"
 libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.1.0"
 ```
 
-```scala mdoc
+```scala mdoc:js
 val x = 1
+
 List(x, x)
 ```
