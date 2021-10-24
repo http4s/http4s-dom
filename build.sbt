@@ -106,7 +106,7 @@ ThisBuild / Test / jsEnv := {
 }
 
 val catsEffectVersion = "3.2.9"
-val fs2Version = "3.1.5"
+val fs2Version = "3.2.0"
 val http4sVersion = "0.23.6"
 val scalaJSDomVersion = "2.0.0-RC1"
 val munitVersion = "0.7.29"
