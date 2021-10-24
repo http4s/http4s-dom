@@ -22,10 +22,10 @@ libraryDependencies += "io.circe" %%% "circe-generic" % "0.15.0-M1"
 ```scala mdoc:js
 <div style="text-align:center">
   <h3 style="padding:10px">
-    I can haz dad joke?
+    I'm bored.
   </h3>
-  <button id="button">Fetch</button>
-  <p style="padding:10px" id="joke"></p>
+  <button id="button">Fetch Activity</button>
+  <p style="padding:10px" id="activity"></p>
 </div>
 ---
 import cats.effect._
@@ -37,19 +37,20 @@ import org.scalajs.dom._
 
 val client = FetchClientBuilder[IO].create
 
-val jokeElement = document.getElementById("joke")
+val activityElement = document.getElementById("activity")
 
-final case class Joke(joke: String)
+final case class Activity(activity: String)
 
-val fetchJoke: IO[Unit] = for {
-  joke <- client.expect[Joke]("https://icanhazdadjoke.com/")
-  _ <- IO(jokeElement.innerHTML = joke.joke)
+val fetchActivity: IO[Unit] = for {
+  _ <- IO(activityElement.innerHTML = "<i>fetching...</i>")
+  activity <- client.expect[Activity]("https://www.boredapi.com/api/activity")
+  _ <- IO(activityElement.innerHTML = activity.activity)
 } yield ()
 
 val button =
   document.getElementById("button").asInstanceOf[html.Button]
 
-button.onclick = _ => fetchJoke.unsafeRunAndForget()
+button.onclick = _ => fetchActivity.unsafeRunAndForget()
 ```
 
 ## Learn more
