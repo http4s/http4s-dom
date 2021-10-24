@@ -112,6 +112,9 @@ val scalaJSDomVersion = "2.0.0"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.6"
 
+// TODO remove when this is fixed upstream
+ThisBuild / libraryDependencySchemes += "com.comcast" %% "ip4s-core_sjs1" % "early-semver"
+
 lazy val root =
   project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
 
