@@ -85,9 +85,8 @@ object ServiceWorker {
           .withAttribute(key, FetchEventContext(event, supervisor))
         response <- routes(request)
         body <- OptionT.liftF(
-          OptionT(response.body.chunkAll.filter(_.nonEmpty).compile.last).map { chunk =>
-            chunk.toJSArrayBuffer
-          }.value)
+          response.body.chunkAll.filter(_.nonEmpty).map(_.toJSArrayBuffer).compile.last
+        )
       } yield new DomResponse(
         body.getOrElse(null),
         new ResponseInit {
