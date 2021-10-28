@@ -190,6 +190,8 @@ lazy val docs =
           title = Some("http4s-dom")
         )
         .site
+        .autoLinkJS() // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
+        .site
         .layout(
           contentWidth = px(860),
           navigationWidth = px(275),
