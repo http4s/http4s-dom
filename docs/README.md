@@ -50,7 +50,7 @@ val client = FetchClientBuilder[IO].create
 
 val activityElement = document.getElementById("activity")
 
-final case class Activity(activity: String)
+case class Activity(activity: String)
 
 val fetchActivity: IO[Unit] = for {
   _ <- IO(activityElement.innerHTML = "<i>fetching...</i>")
@@ -58,8 +58,7 @@ val fetchActivity: IO[Unit] = for {
   _ <- IO(activityElement.innerHTML = activity.activity)
 } yield ()
 
-val button =
-  document.getElementById("button").asInstanceOf[html.Button]
+val button = document.getElementById("button").asInstanceOf[html.Button]
 
 button.onclick = _ => fetchActivity.unsafeRunAndForget()
 ```
