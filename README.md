@@ -1,6 +1,8 @@
 # http4s-dom
 
-Use http4s in your browser with Scala.js!
+Use http4s in your browser with Scala.js! Check out the [live example](https://http4s.github.io/http4s-dom/) in the docs.
+
+
 Features:
 
 * A [`Client` implementation](https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/FetchClientBuilder.html) backed by [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
