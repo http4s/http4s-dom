@@ -21,11 +21,11 @@ import cats.effect.Resource
 import org.http4s.client.Client
 import org.http4s.client.defaults
 import org.http4s.internal.BackendBuilder
-import org.scalajs.dom.experimental.ReferrerPolicy
-import org.scalajs.dom.experimental.RequestCache
-import org.scalajs.dom.experimental.RequestCredentials
-import org.scalajs.dom.experimental.RequestMode
-import org.scalajs.dom.experimental.RequestRedirect
+import org.scalajs.dom.ReferrerPolicy
+import org.scalajs.dom.RequestCache
+import org.scalajs.dom.RequestCredentials
+import org.scalajs.dom.RequestMode
+import org.scalajs.dom.RequestRedirect
 
 import scala.concurrent.duration._
 

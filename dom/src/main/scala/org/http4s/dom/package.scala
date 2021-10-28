@@ -22,9 +22,9 @@ import cats.syntax.all._
 import fs2.Stream
 import org.scalajs.dom.Blob
 import org.scalajs.dom.File
-import org.scalajs.dom.experimental.ReadableStream
-import org.scalajs.dom.experimental.{Headers => DomHeaders}
-import org.scalajs.dom.experimental.{Response => DomResponse}
+import org.scalajs.dom.ReadableStream
+import org.scalajs.dom.{Headers => DomHeaders}
+import org.scalajs.dom.{Response => DomResponse}
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
@@ -39,8 +39,7 @@ package object dom {
     EntityEncoder.entityBodyEncoder.contramap { blob =>
       Stream
         .bracketCase {
-          // lol, the facade is still broken. next time
-          F.delay(blob.stream().asInstanceOf[ReadableStream[Uint8Array]])
+          F.delay(blob.stream())
         } { case (rs, exitCase) => closeReadableStream(rs, exitCase) }
         .flatMap(fromReadableStream[F])
     }

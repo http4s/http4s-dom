@@ -23,7 +23,7 @@ import cats.effect.SyncIO
 import cats.effect.kernel.Async
 import cats.effect.std.Supervisor
 import cats.syntax.all._
-import org.scalajs.dom.experimental.serviceworkers.FetchEvent
+import org.scalajs.dom.FetchEvent
 import org.typelevel.vault.Key
 
 final class FetchEventContext[F[_]] private (
