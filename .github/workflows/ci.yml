@@ -135,7 +135,7 @@ jobs:
       - run: sbt ++${{ matrix.scala }} release
 
   site:
-    name: Publish site
+    name: Publish Site
     needs: [build]
     if: github.event_name != 'pull_request'
     strategy:

@@ -238,7 +238,7 @@ lazy val docs =
 ThisBuild / githubWorkflowAddedJobs +=
   WorkflowJob(
     "site",
-    "Publish site",
+    "Publish Site",
     scalas = List(crossScalaVersions.value.last),
     cond = Some("github.event_name != 'pull_request'"),
     needs = List("build"),
