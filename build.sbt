@@ -125,7 +125,9 @@ lazy val dom = project
       "co.fs2" %%% "fs2-io" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    )
+    ),
+    // TODO sbt-spiewak doesn't like sjs :(
+    mimaPreviousArtifacts ~= { _.map(a => a.organization %% "http4s-dom_sjs1" % a.revision) }
   )
   .enablePlugins(ScalaJSPlugin)
 
