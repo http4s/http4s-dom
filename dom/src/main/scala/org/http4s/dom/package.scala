@@ -72,7 +72,7 @@ package object dom {
 
   private[dom] def fromDomHeaders(headers: DomHeaders): Headers =
     Headers(
-      headers.toIterable.map { header => header(0) -> header(1) }.toList
+      headers.map { header => header(0) -> header(1) }.toList
     )
 
   private[dom] def fromReadableStream[F[_]](rs: ReadableStream[Uint8Array])(

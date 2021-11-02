@@ -39,7 +39,7 @@ ThisBuild / scmInfo := Some(
     url("https://github.com/http4s/http4s-dom"),
     "https://github.com/http4s/http4s-dom.git"))
 
-ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
