@@ -23,7 +23,7 @@ import JSEnv._
 
 name := "http4s-dom"
 
-ThisBuild / baseVersion := "0.2"
+ThisBuild / baseVersion := "1.0"
 
 ThisBuild / organization := "org.http4s"
 ThisBuild / organizationName := "http4s.org"
@@ -31,7 +31,7 @@ ThisBuild / publishGithubUser := "armanbilge"
 ThisBuild / publishFullName := "Arman Bilge"
 
 enablePlugins(SonatypeCiReleasePlugin)
-ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
+ThisBuild / githubWorkflowTargetBranches := Seq("main")
 
 ThisBuild / homepage := Some(url("https://github.com/http4s/http4s-dom"))
 ThisBuild / scmInfo := Some(
@@ -107,7 +107,7 @@ ThisBuild / Test / jsEnv := {
 
 val catsEffectVersion = "3.2.9"
 val fs2Version = "3.2.2"
-val http4sVersion = "0.23.6"
+val http4sVersion = "1.0.0-M29"
 val scalaJSDomVersion = "2.0.0"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.6"
