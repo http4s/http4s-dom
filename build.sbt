@@ -31,8 +31,7 @@ ThisBuild / publishGithubUser := "armanbilge"
 ThisBuild / publishFullName := "Arman Bilge"
 
 enablePlugins(SonatypeCiReleasePlugin)
-ThisBuild / spiewakCiReleaseSnapshots := true
-ThisBuild / spiewakMainBranches := Seq("main")
+ThisBuild / githubWorkflowTargetBranches := Seq("main")
 
 ThisBuild / homepage := Some(url("https://github.com/http4s/http4s-dom"))
 ThisBuild / scmInfo := Some(
@@ -40,7 +39,7 @@ ThisBuild / scmInfo := Some(
     url("https://github.com/http4s/http4s-dom"),
     "https://github.com/http4s/http4s-dom.git"))
 
-ThisBuild / crossScalaVersions := Seq( /*"3.0.2",*/ "2.12.15", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
@@ -107,54 +106,29 @@ ThisBuild / Test / jsEnv := {
 }
 
 val catsEffectVersion = "3.2.9"
-val fs2Version = "3.1.4"
-val http4sVersion = "1.0.0-M27"
-val scalaJSDomVersion = "1.2.0"
+val fs2Version = "3.2.2"
+val http4sVersion = "1.0.0-M29"
+val scalaJSDomVersion = "2.0.0"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.6"
 
 lazy val root =
-  project
-    .in(file("."))
-    .aggregate(core, fetchClient, serviceWorker, tests)
-    .enablePlugins(NoPublishPlugin)
+  project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
 
-lazy val core = project
-  .in(file("core"))
+lazy val dom = project
+  .in(file("dom"))
   .settings(
-    name := "http4s-dom-core",
-    description := "Base library for dom http4s client and apps",
+    name := "http4s-dom",
+    description := "http4s browser integrations",
     libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-effect-kernel" % catsEffectVersion,
-      "co.fs2" %%% "fs2-core" % fs2Version,
-      "org.http4s" %%% "http4s-core" % http4sVersion,
+      "org.typelevel" %%% "cats-effect" % catsEffectVersion,
+      "co.fs2" %%% "fs2-io" % fs2Version,
+      "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    )
+    ),
+    // TODO sbt-spiewak doesn't like sjs :(
+    mimaPreviousArtifacts ~= { _.map(a => a.organization %% "http4s-dom_sjs1" % a.revision) }
   )
-  .enablePlugins(ScalaJSPlugin)
-
-lazy val fetchClient = project
-  .in(file("fetch-client"))
-  .settings(
-    name := "http4s-dom-fetch-client",
-    description := "browser fetch implementation for http4s clients",
-    libraryDependencies ++= Seq(
-      "org.http4s" %%% "http4s-client" % http4sVersion
-    )
-  )
-  .dependsOn(core)
-  .enablePlugins(ScalaJSPlugin)
-
-lazy val serviceWorker = project
-  .in(file("service-worker"))
-  .settings(
-    name := "http4s-dom-service-worker",
-    description := "browser service worker implementation for http4s apps",
-    libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-effect" % catsEffectVersion
-    )
-  )
-  .dependsOn(core)
   .enablePlugins(ScalaJSPlugin)
 
 lazy val tests = project
@@ -169,5 +143,93 @@ lazy val tests = project
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
     )
   )
-  .dependsOn(serviceWorker, fetchClient % Test)
+  .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
+
+lazy val jsdocs =
+  project
+    .dependsOn(dom)
+    .settings(
+      fatalWarningsInCI := false, // Remove once mdocjs bumps to sjs-dom v2
+      libraryDependencies ++= Seq(
+        "org.http4s" %%% "http4s-circe" % http4sVersion,
+        "io.circe" %%% "circe-generic" % "0.15.0-M1"
+      )
+    )
+    .enablePlugins(ScalaJSPlugin)
+
+import laika.ast.Path.Root
+import laika.ast._
+import laika.ast.LengthUnit._
+import laika.helium.Helium
+import laika.helium.config.{HeliumIcon, IconLink, ImageLink, ReleaseInfo, Teaser, TextLink}
+import laika.theme.config.Color
+
+Global / excludeLintKeys += laikaDescribe
+
+lazy val docs =
+  project
+    .in(file("mdocs"))
+    .settings(
+      fatalWarningsInCI := false, // Remove once mdocjs bumps to sjs-dom v2
+      mdocJS := Some(jsdocs),
+      Laika / sourceDirectories := Seq(mdocOut.value),
+      laikaDescribe := "<disabled>",
+      laikaConfig ~= { _.withRawContent },
+      laikaExtensions ++= Seq(
+        laika.markdown.github.GitHubFlavor,
+        laika.parse.code.SyntaxHighlighting
+      ),
+      laikaTheme := Helium
+        .defaults
+        .all
+        .metadata(
+          language = Some("en"),
+          title = Some("http4s-dom")
+        )
+        .site
+        .autoLinkJS() // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
+        .site
+        .layout(
+          contentWidth = px(860),
+          navigationWidth = px(275),
+          topBarHeight = px(35),
+          defaultBlockSpacing = px(10),
+          defaultLineHeight = 1.5,
+          anchorPlacement = laika.helium.config.AnchorPlacement.Right
+        )
+        .site
+        .themeColors(
+          primary = Color.hex("5B7980"),
+          secondary = Color.hex("cc6600"),
+          primaryMedium = Color.hex("a7d4de"),
+          primaryLight = Color.hex("e9f1f2"),
+          text = Color.hex("5f5f5f"),
+          background = Color.hex("ffffff"),
+          bgGradient =
+            (Color.hex("334044"), Color.hex("5B7980")) // only used for landing page background
+        )
+        .site
+        .darkMode
+        .disabled
+        .site
+        .topNavigationBar(
+          homeLink = ImageLink.external(
+            "https://http4s.org",
+            Image.external("https://http4s.org/v1.0/images/http4s-logo-text-dark-2.svg")),
+          navLinks = Seq(
+            IconLink.external(
+              "https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/index.html",
+              HeliumIcon.api,
+              options = Styles("svg-link")),
+            IconLink.external(
+              "https://github.com/http4s/http4s-dom",
+              HeliumIcon.github,
+              options = Styles("svg-link")),
+            IconLink.external("https://discord.gg/XF3CXcMzqD", HeliumIcon.chat),
+            IconLink.external("https://twitter.com/http4s", HeliumIcon.twitter)
+          )
+        )
+        .build
+    )
+    .enablePlugins(MdocPlugin, LaikaPlugin)
