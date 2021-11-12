@@ -233,24 +233,3 @@ lazy val docs =
         .build
     )
     .enablePlugins(MdocPlugin, LaikaPlugin)
-
-ThisBuild / githubWorkflowAddedJobs +=
-  WorkflowJob(
-    "site",
-    "Publish Site",
-    scalas = List(crossScalaVersions.value.last),
-    cond = Some("github.event_name != 'pull_request'"),
-    needs = List("build"),
-    steps = githubWorkflowJobSetup.value.toList ::: List(
-      WorkflowStep.Sbt(List("docs/mdoc", "docs/laikaSite"), name = Some("Generate")),
-      WorkflowStep.Use(
-        UseRef.Public("peaceiris", "actions-gh-pages", "v3"),
-        Map(
-          "github_token" -> "${{ secrets.GITHUB_TOKEN }}",
-          "publish_dir" -> "./mdocs/target/docs/site",
-          "publish_branch" -> "gh-pages"
-        ),
-        name = Some("Publish")
-      )
-    )
-  )
