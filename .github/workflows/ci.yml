@@ -9,9 +9,9 @@ name: Continuous Integration
 
 on:
   pull_request:
-    branches: ['**']
+    branches: [series/0.2]
   push:
-    branches: ['**']
+    branches: [series/0.2]
     tags: [v*]
 
 env:
@@ -26,7 +26,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.15, 2.13.6]
+        scala: [2.12.15, 3.1.0, 2.13.7]
         java: [adopt@1.8]
     runs-on: ${{ matrix.os }}
     steps:
@@ -58,7 +58,7 @@ jobs:
       - run: sbt ++${{ matrix.scala }} ci
 
       - name: Compress target directories
-        run: tar cf targets.tar target tests/target fetch-client/target service-worker/target core/target project/target
+        run: tar cf targets.tar target mdocs/target tests/target dom/target jsdocs/target project/target
 
       - name: Upload target directories
         uses: actions/upload-artifact@v2
@@ -69,11 +69,11 @@ jobs:
   publish:
     name: Publish Artifacts
     needs: [build]
-    if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/main')
+    if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v'))
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.6]
+        scala: [2.13.7]
         java: [adopt@1.8]
     runs-on: ${{ matrix.os }}
     steps:
@@ -109,12 +109,22 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (2.13.6)
+      - name: Download target directories (3.1.0)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-2.13.6-${{ matrix.java }}
+          name: target-${{ matrix.os }}-3.1.0-${{ matrix.java }}
 
-      - name: Inflate target directories (2.13.6)
+      - name: Inflate target directories (3.1.0)
+        run: |
+          tar xf targets.tar
+          rm targets.tar
+
+      - name: Download target directories (2.13.7)
+        uses: actions/download-artifact@v2
+        with:
+          name: target-${{ matrix.os }}-2.13.7-${{ matrix.java }}
+
+      - name: Inflate target directories (2.13.7)
         run: |
           tar xf targets.tar
           rm targets.tar
@@ -123,3 +133,46 @@ jobs:
         run: echo $PGP_SECRET | base64 -d | gpg --import
 
       - run: sbt ++${{ matrix.scala }} release
+
+  site:
+    name: Publish Site
+    needs: [build]
+    if: github.event_name != 'pull_request'
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.13.7]
+        java: [adopt@1.8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java and Scala
+        uses: olafurpg/setup-scala@v13
+        with:
+          java-version: ${{ matrix.java }}
+
+      - name: Cache sbt
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.coursier/cache/v1
+            ~/.cache/coursier/v1
+            ~/AppData/Local/Coursier/Cache/v1
+            ~/Library/Caches/Coursier/v1
+          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+
+      - name: Generate
+        run: sbt ++${{ matrix.scala }} docs/mdoc docs/laikaSite
+
+      - name: Publish
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./mdocs/target/docs/site
+          publish_branch: gh-pages

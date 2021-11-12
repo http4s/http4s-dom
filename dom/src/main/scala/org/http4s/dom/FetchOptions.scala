@@ -17,11 +17,11 @@
 package org.http4s.dom
 
 import cats.effect.SyncIO
-import org.scalajs.dom.experimental.ReferrerPolicy
-import org.scalajs.dom.experimental.RequestCache
-import org.scalajs.dom.experimental.RequestCredentials
-import org.scalajs.dom.experimental.RequestMode
-import org.scalajs.dom.experimental.RequestRedirect
+import org.scalajs.dom.ReferrerPolicy
+import org.scalajs.dom.RequestCache
+import org.scalajs.dom.RequestCredentials
+import org.scalajs.dom.RequestMode
+import org.scalajs.dom.RequestRedirect
 import org.typelevel.vault
 
 /**

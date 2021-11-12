@@ -23,7 +23,7 @@ import cats.effect.SyncIO
 import cats.effect.kernel.Async
 import cats.effect.std.Supervisor
 import cats.syntax.all._
-import org.scalajs.dom.experimental.serviceworkers.FetchEvent
+import org.scalajs.dom.FetchEvent
 import org.typelevel.vault.Key
 
 final class FetchEventContext[F[_]] private (
@@ -45,7 +45,7 @@ object FetchEventContext {
       event.clientId,
       event.resultingClientId,
       OptionT(F.fromPromise(F.pure(event.preloadResponse)).map(_.toOption))
-        .semiflatMap(fromResponse[F])
+        .semiflatMap(fromDomResponse[F])
         .value,
       supervisor
     )

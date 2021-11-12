@@ -18,8 +18,8 @@ package org.http4s.dom
 
 import cats.effect.IO
 import cats.effect.unsafe.implicits._
-import org.scalajs.dom.experimental.serviceworkers.ExtendableEvent
-import org.scalajs.dom.experimental.serviceworkers.ServiceWorkerGlobalScope
+import org.scalajs.dom.ExtendableEvent
+import org.scalajs.dom.ServiceWorkerGlobalScope
 
 object TestServiceWorker {
 

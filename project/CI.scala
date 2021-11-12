@@ -52,8 +52,8 @@ object CI {
       extends CI(
         rootProject = "/",
         jsEnv = Some(JSEnv.Chrome),
-        testCommands = List("test"),
-        mimaReport = false,
+        testCommands = List("test", "docs/mdoc"),
+        mimaReport = true,
         suffixCommands = List())
 
   val AllCIs: List[CI] = List(Firefox, Chrome)
