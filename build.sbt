@@ -171,8 +171,9 @@ lazy val docs =
   project
     .in(file("mdocs"))
     .settings(
-      fatalWarningsInCI := false, // Remove once mdocjs bumps to sjs-dom v2
+      fatalWarningsInCI := false,
       mdocJS := Some(jsdocs),
+      mdocVariables += "js-opt" -> "fast",
       Laika / sourceDirectories := Seq(mdocOut.value),
       laikaDescribe := "<disabled>",
       laikaConfig ~= { _.withRawContent },
