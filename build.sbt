@@ -110,7 +110,7 @@ val fs2Version = "3.2.2"
 val http4sVersion = "0.23.6"
 val scalaJSDomVersion = "2.0.0"
 val munitVersion = "0.7.29"
-val munitCEVersion = "1.0.6"
+val munitCEVersion = "1.0.7"
 
 lazy val root =
   project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
