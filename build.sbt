@@ -162,7 +162,15 @@ import laika.ast.Path.Root
 import laika.ast._
 import laika.ast.LengthUnit._
 import laika.helium.Helium
-import laika.helium.config.{HeliumIcon, IconLink, ImageLink, ReleaseInfo, Teaser, TextLink}
+import laika.helium.config.{
+  Favicon,
+  HeliumIcon,
+  IconLink,
+  ImageLink,
+  ReleaseInfo,
+  Teaser,
+  TextLink
+}
 import laika.theme.config.Color
 
 Global / excludeLintKeys += laikaDescribe
@@ -209,6 +217,13 @@ lazy val docs =
           background = Color.hex("ffffff"),
           bgGradient =
             (Color.hex("334044"), Color.hex("5B7980")) // only used for landing page background
+        )
+        .site
+        .favIcons(
+          Favicon
+            .external("https://http4s.org/images/http4s-favicon.svg", "32x32", "image/svg+xml")
+            .copy(sizes = None),
+          Favicon.external("https://http4s.org/images/http4s-favicon.png", "32x32", "image/png")
         )
         .site
         .darkMode
