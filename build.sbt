@@ -109,8 +109,9 @@ ThisBuild / Test / jsEnv := {
 
 val catsEffectVersion = "3.3.0"
 val fs2Version = "3.2.3"
-val http4sVersion = "0.23.7"
+val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.0.0"
+val circeVersion = "0.15.0-M1"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
 
@@ -183,7 +184,11 @@ lazy val docs =
     .settings(
       fatalWarningsInCI := false,
       mdocJS := Some(jsdocs),
-      mdocVariables += "js-opt" -> "fast",
+      mdocVariables ++= Map(
+        "js-opt" -> "fast",
+        "HTTP4S_VERSION" -> http4sVersion,
+        "CIRCE_VERSION" -> circeVersion
+      ),
       Laika / sourceDirectories := Seq(mdocOut.value),
       laikaDescribe := "<disabled>",
       laikaConfig ~= { _.withRawContent },
