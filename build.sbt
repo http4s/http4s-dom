@@ -41,6 +41,8 @@ ThisBuild / scmInfo := Some(
 
 ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
+
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
 addCommandAlias("ciChrome", CI.Chrome.toString)
@@ -105,12 +107,13 @@ ThisBuild / Test / jsEnv := {
   }
 }
 
-val catsEffectVersion = "3.2.9"
-val fs2Version = "3.2.2"
+val catsEffectVersion = "3.3.0"
+val fs2Version = "3.2.3"
 val http4sVersion = "1.0.0-M29"
 val scalaJSDomVersion = "2.0.0"
+val circeVersion = "0.15.0-M1"
 val munitVersion = "0.7.29"
-val munitCEVersion = "1.0.6"
+val munitCEVersion = "1.0.7"
 
 lazy val root =
   project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
@@ -162,7 +165,15 @@ import laika.ast.Path.Root
 import laika.ast._
 import laika.ast.LengthUnit._
 import laika.helium.Helium
-import laika.helium.config.{HeliumIcon, IconLink, ImageLink, ReleaseInfo, Teaser, TextLink}
+import laika.helium.config.{
+  Favicon,
+  HeliumIcon,
+  IconLink,
+  ImageLink,
+  ReleaseInfo,
+  Teaser,
+  TextLink
+}
 import laika.theme.config.Color
 
 Global / excludeLintKeys += laikaDescribe
@@ -171,8 +182,13 @@ lazy val docs =
   project
     .in(file("mdocs"))
     .settings(
-      fatalWarningsInCI := false, // Remove once mdocjs bumps to sjs-dom v2
+      fatalWarningsInCI := false,
       mdocJS := Some(jsdocs),
+      mdocVariables ++= Map(
+        "js-opt" -> "fast",
+        "HTTP4S_VERSION" -> http4sVersion,
+        "CIRCE_VERSION" -> circeVersion
+      ),
       Laika / sourceDirectories := Seq(mdocOut.value),
       laikaDescribe := "<disabled>",
       laikaConfig ~= { _.withRawContent },
@@ -208,6 +224,13 @@ lazy val docs =
           background = Color.hex("ffffff"),
           bgGradient =
             (Color.hex("334044"), Color.hex("5B7980")) // only used for landing page background
+        )
+        .site
+        .favIcons(
+          Favicon
+            .external("https://http4s.org/images/http4s-favicon.svg", "32x32", "image/svg+xml")
+            .copy(sizes = None),
+          Favicon.external("https://http4s.org/images/http4s-favicon.png", "32x32", "image/png")
         )
         .site
         .darkMode
