@@ -41,7 +41,9 @@ ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 
-replaceCommandAlias("ci", "; headerCheck; scalafmtSbtCheck; scalafmtCheck; clean; test; docs/mdoc; mimaReportBinaryIssues")
+replaceCommandAlias(
+  "ci",
+  "; headerCheck; scalafmtSbtCheck; scalafmtCheck; clean; test; docs/mdoc; mimaReportBinaryIssues")
 
 addCommandAlias("prePR", "; root/clean; scalafmtSbt; +root/scalafmtAll; +root/headerCreate")
 
@@ -90,12 +92,16 @@ lazy val tests = project
 def mkJSEnv(options: Capabilities) = {
   val config = SeleniumJSEnv
     .Config()
-    .withMaterializeInServer("target/selenium", s"http://localhost:$fileServicePort/target/selenium/")
+    .withMaterializeInServer(
+      "target/selenium",
+      s"http://localhost:$fileServicePort/target/selenium/")
   new SeleniumJSEnv(options, config)
 }
 
-lazy val chromeTests = tests.settings(Test / jsEnv := mkJSEnv(new ChromeOptions().setHeadless(true)))
-lazy val firefoxTests = tests.settings(Test / jsEnv := mkJSEnv(new FirefoxOptions().setHeadless(true)))
+lazy val chromeTests =
+  tests.settings(Test / jsEnv := mkJSEnv(new ChromeOptions().setHeadless(true)))
+lazy val firefoxTests =
+  tests.settings(Test / jsEnv := mkJSEnv(new FirefoxOptions().setHeadless(true)))
 
 lazy val fileServicePort = {
   import cats.data.Kleisli
