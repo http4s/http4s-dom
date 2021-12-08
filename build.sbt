@@ -14,12 +14,10 @@
  * limitations under the License.
  */
 
-import org.openqa.selenium.WebDriver
+import org.openqa.selenium.Capabilities
 import org.openqa.selenium.chrome.ChromeOptions
 import org.openqa.selenium.firefox.FirefoxOptions
 import org.scalajs.jsenv.selenium.SeleniumJSEnv
-
-import JSEnv._
 
 name := "http4s-dom"
 
@@ -43,17 +41,63 @@ ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 
-replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
-addCommandAlias("ciFirefox", CI.Firefox.toString)
-addCommandAlias("ciChrome", CI.Chrome.toString)
+replaceCommandAlias("ci", "; headerCheck; scalafmtSbtCheck; scalafmtCheck; clean; test; docs/mdoc; mimaReportBinaryIssues")
 
 addCommandAlias("prePR", "; root/clean; scalafmtSbt; +root/scalafmtAll; +root/headerCreate")
 
-lazy val useJSEnv = settingKey[JSEnv]("Browser for running Scala.js tests")
-Global / useJSEnv := Chrome
+val catsEffectVersion = "3.3.0"
+val fs2Version = "3.2.3"
+val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
+val scalaJSDomVersion = "2.0.0"
+val circeVersion = "0.15.0-M1"
+val munitVersion = "0.7.29"
+val munitCEVersion = "1.0.7"
 
-lazy val fileServicePort = settingKey[Int]("Port for static file server")
-Global / fileServicePort := {
+lazy val root =
+  project.in(file(".")).aggregate(dom, chromeTests, firefoxTests).enablePlugins(NoPublishPlugin)
+
+lazy val dom = project
+  .in(file("dom"))
+  .settings(
+    name := "http4s-dom",
+    description := "http4s browser integrations",
+    libraryDependencies ++= Seq(
+      "org.typelevel" %%% "cats-effect" % catsEffectVersion,
+      "co.fs2" %%% "fs2-io" % fs2Version,
+      "org.http4s" %%% "http4s-client" % http4sVersion,
+      "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
+    ),
+    // TODO sbt-spiewak doesn't like sjs :(
+    mimaPreviousArtifacts ~= { _.map(a => a.organization %% "http4s-dom_sjs1" % a.revision) }
+  )
+  .enablePlugins(ScalaJSPlugin)
+
+lazy val tests = project
+  .in(file("tests"))
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
+    buildInfoKeys := Seq[BuildInfoKey](scalaVersion),
+    buildInfoPackage := "org.http4s.dom",
+    libraryDependencies ++= Seq(
+      "org.scalameta" %%% "munit" % munitVersion % Test,
+      "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
+    )
+  )
+  .dependsOn(dom)
+  .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
+
+def mkJSEnv(options: Capabilities) = {
+  val config = SeleniumJSEnv
+    .Config()
+    .withMaterializeInServer("target/selenium", s"http://localhost:$fileServicePort/target/selenium/")
+  new SeleniumJSEnv(options, config)
+}
+
+lazy val chromeTests = tests.settings(Test / jsEnv := mkJSEnv(new ChromeOptions().setHeadless(true)))
+lazy val firefoxTests = tests.settings(Test / jsEnv := mkJSEnv(new FirefoxOptions().setHeadless(true)))
+
+lazy val fileServicePort = {
   import cats.data.Kleisli
   import cats.effect.IO
   import cats.effect.unsafe.implicits.global
@@ -87,67 +131,6 @@ Global / fileServicePort := {
     port <- deferredPort.get
   } yield port).unsafeRunSync()
 }
-
-ThisBuild / Test / jsEnv := {
-  val config = SeleniumJSEnv
-    .Config()
-    .withMaterializeInServer(
-      "target/selenium",
-      s"http://localhost:${fileServicePort.value}/target/selenium/")
-
-  useJSEnv.value match {
-    case Chrome =>
-      val options = new ChromeOptions()
-      options.setHeadless(true)
-      new SeleniumJSEnv(options, config)
-    case Firefox =>
-      val options = new FirefoxOptions()
-      options.setHeadless(true)
-      new SeleniumJSEnv(options, config)
-  }
-}
-
-val catsEffectVersion = "3.3.0"
-val fs2Version = "3.2.3"
-val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
-val scalaJSDomVersion = "2.0.0"
-val circeVersion = "0.15.0-M1"
-val munitVersion = "0.7.29"
-val munitCEVersion = "1.0.7"
-
-lazy val root =
-  project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
-
-lazy val dom = project
-  .in(file("dom"))
-  .settings(
-    name := "http4s-dom",
-    description := "http4s browser integrations",
-    libraryDependencies ++= Seq(
-      "org.typelevel" %%% "cats-effect" % catsEffectVersion,
-      "co.fs2" %%% "fs2-io" % fs2Version,
-      "org.http4s" %%% "http4s-client" % http4sVersion,
-      "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    ),
-    // TODO sbt-spiewak doesn't like sjs :(
-    mimaPreviousArtifacts ~= { _.map(a => a.organization %% "http4s-dom_sjs1" % a.revision) }
-  )
-  .enablePlugins(ScalaJSPlugin)
-
-lazy val tests = project
-  .in(file("tests"))
-  .settings(
-    scalaJSUseMainModuleInitializer := true,
-    (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
-    buildInfoKeys := Seq[BuildInfoKey](scalaVersion),
-    buildInfoPackage := "org.http4s.dom",
-    libraryDependencies ++= Seq(
-      "org.scalameta" %%% "munit" % munitVersion % Test,
-      "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
-    )
-  )
-  .dependsOn(dom)
-  .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
 
 lazy val jsdocs =
   project
