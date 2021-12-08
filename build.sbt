@@ -41,6 +41,8 @@ ThisBuild / scmInfo := Some(
 
 ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
+
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
 addCommandAlias("ciChrome", CI.Chrome.toString)
