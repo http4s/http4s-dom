@@ -107,7 +107,7 @@ ThisBuild / Test / jsEnv := {
   }
 }
 
-val catsEffectVersion = "3.3.0"
+val catsEffectVersion = "3.3.1"
 val fs2Version = "3.2.3"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.0.0"
@@ -125,7 +125,7 @@ lazy val dom = project
     description := "http4s browser integrations",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
-      "co.fs2" %%% "fs2-io" % fs2Version,
+      "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
     ),
