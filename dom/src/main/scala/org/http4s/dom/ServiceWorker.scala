@@ -90,9 +90,9 @@ object ServiceWorker {
       } yield new DomResponse(
         body.getOrElse(null),
         new ResponseInit {
-          var status = response.status.code
-          var statusText = response.status.reason
-          var headers = toDomHeaders(response.headers)
+          status = response.status.code
+          statusText = response.status.reason
+          headers = toDomHeaders(response.headers)
         }
       )
     }
