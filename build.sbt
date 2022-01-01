@@ -108,7 +108,7 @@ ThisBuild / Test / jsEnv := {
 }
 
 val catsEffectVersion = "3.3.3"
-val fs2Version = "3.2.3"
+val fs2Version = "3.2.4"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.1.0"
 val circeVersion = "0.15.0-M1"
