@@ -59,6 +59,9 @@ jobs:
 
       - run: sbt ++${{ matrix.scala }} ci
 
+      - name: Make target directories
+        run: mkdir -p target mdocs/target tests/target dom/target jsdocs/target project/target
+
       - name: Compress target directories
         run: tar cf targets.tar target mdocs/target tests/target dom/target jsdocs/target project/target
 
@@ -139,14 +142,50 @@ jobs:
       - run: sbt ++${{ matrix.scala }} release
 
   site:
+    name: Build Site
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        scala: [2.12.15]
+        java: [temurin@8]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java (temurin@8)
+        if: matrix.java == 'temurin@8'
+        uses: actions/setup-java@v2
+        with:
+          distribution: temurin
+          java-version: 8
+
+      - name: Cache sbt
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.coursier/cache/v1
+            ~/.cache/coursier/v1
+            ~/AppData/Local/Coursier/Cache/v1
+            ~/Library/Caches/Coursier/v1
+          key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
+
+      - name: Generate
+        run: sbt ++${{ matrix.scala }} docs/mdoc docs/laikaSite
+
+  publish-site:
     name: Publish Site
-    needs: [build]
+    needs: [build, site]
     if: github.event_name != 'pull_request'
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.7]
-        java: [temurin@11]
+        scala: [2.12.15]
+        java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
