@@ -59,6 +59,9 @@ jobs:
 
       - run: sbt ++${{ matrix.scala }} ci
 
+      - name: Make target directories
+        run: mkdir -p target mdocs/target tests/target dom/target jsdocs/target project/target
+
       - name: Compress target directories
         run: tar cf targets.tar target mdocs/target tests/target dom/target jsdocs/target project/target
 
@@ -143,7 +146,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.15, 2.13.7]
+        scala: [2.12.15]
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:
@@ -181,7 +184,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest]
-        scala: [2.13.7]
+        scala: [2.12.15]
         java: [temurin@8]
     runs-on: ${{ matrix.os }}
     steps:

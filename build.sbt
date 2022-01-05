@@ -43,6 +43,24 @@ ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 
+ThisBuild / githubWorkflowGeneratedUploadSteps ~= { steps =>
+  steps.flatMap {
+    case compressStep @ WorkflowStep.Run(
+          command :: _,
+          _,
+          Some("Compress target directories"),
+          _,
+          _,
+          _) =>
+      val mkdirStep = WorkflowStep.Run(
+        commands = List(command.replace("tar cf targets.tar", "mkdir -p")),
+        name = Some("Make target directories")
+      )
+      List(mkdirStep, compressStep)
+    case step => List(step)
+  }
+}
+
 replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
 addCommandAlias("ciChrome", CI.Chrome.toString)
@@ -265,7 +283,7 @@ ThisBuild / githubWorkflowAddedJobs +=
   WorkflowJob(
     "site",
     "Build Site",
-    scalas = crossScalaVersions.value.filterNot(_.startsWith("3.")).toList,
+    scalas = List(crossScalaVersions.value.head),
     javas = githubWorkflowJavaVersions.value.toList,
     steps = githubWorkflowJobSetup.value.toList ::: List(
       WorkflowStep.Sbt(List("docs/mdoc", "docs/laikaSite"), name = Some("Generate"))
@@ -276,7 +294,7 @@ ThisBuild / githubWorkflowAddedJobs +=
   WorkflowJob(
     "publish-site",
     "Publish Site",
-    scalas = List(crossScalaVersions.value.last),
+    scalas = List(crossScalaVersions.value.head),
     javas = githubWorkflowJavaVersions.value.toList,
     cond = Some("github.event_name != 'pull_request'"),
     needs = List("build", "site"),
