@@ -116,7 +116,7 @@ val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
 
 lazy val root =
-  project.in(file(".")).aggregate(dom, tests, jsdocs, docs).enablePlugins(NoPublishPlugin)
+  project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
 
 lazy val dom = project
   .in(file("dom"))
