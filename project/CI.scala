@@ -52,7 +52,7 @@ object CI {
       extends CI(
         rootProject = "/",
         jsEnv = Some(JSEnv.Chrome),
-        testCommands = List("test", "docs/mdoc"),
+        testCommands = List("test"),
         mimaReport = true,
         suffixCommands = List())
 

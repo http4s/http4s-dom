@@ -182,9 +182,6 @@ lazy val docs =
   project
     .in(file("mdocs"))
     .settings(
-      crossScalaVersions := {
-        (ThisBuild / crossScalaVersions).value.filterNot(_.startsWith("3"))
-      },
       libraryDependencies ++= Seq(
         "org.scala-js" %% "scalajs-compiler" % scalaJSVersion cross CrossVersion.full,
         "org.scala-js" %% "scalajs-linker" % scalaJSVersion
@@ -267,10 +264,22 @@ lazy val docs =
 ThisBuild / githubWorkflowAddedJobs +=
   WorkflowJob(
     "site",
+    "Build Site",
+    scalas = crossScalaVersions.value.filterNot(_.startsWith("3.")).toList,
+    javas = githubWorkflowJavaVersions.value.toList,
+    steps = githubWorkflowJobSetup.value.toList ::: List(
+      WorkflowStep.Sbt(List("docs/mdoc", "docs/laikaSite"), name = Some("Generate"))
+    )
+  )
+
+ThisBuild / githubWorkflowAddedJobs +=
+  WorkflowJob(
+    "publish-site",
     "Publish Site",
     scalas = List(crossScalaVersions.value.last),
+    javas = githubWorkflowJavaVersions.value.toList,
     cond = Some("github.event_name != 'pull_request'"),
-    needs = List("build"),
+    needs = List("build", "site"),
     steps = githubWorkflowJobSetup.value.toList ::: List(
       WorkflowStep.Sbt(List("docs/mdoc", "docs/laikaSite"), name = Some("Generate")),
       WorkflowStep.Use(
