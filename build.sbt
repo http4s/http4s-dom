@@ -41,6 +41,24 @@ ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 
+ThisBuild / githubWorkflowGeneratedUploadSteps ~= { steps =>
+  steps.flatMap {
+    case compressStep @ WorkflowStep.Run(
+          command :: _,
+          _,
+          Some("Compress target directories"),
+          _,
+          _,
+          _) =>
+      val mkdirStep = WorkflowStep.Run(
+        commands = List(command.replace("tar cf targets.tar", "mkdir -p")),
+        name = Some("Make target directories")
+      )
+      List(mkdirStep, compressStep)
+    case step => List(step)
+  }
+}
+
 replaceCommandAlias(
   "ci",
   "; headerCheck; scalafmtSbtCheck; scalafmtCheck; clean; test; docs/mdoc; mimaReportBinaryIssues")
@@ -48,9 +66,9 @@ replaceCommandAlias(
 addCommandAlias("prePR", "; root/clean; scalafmtSbt; +root/scalafmtAll; +root/headerCreate")
 
 val catsEffectVersion = "3.3.0"
-val fs2Version = "3.2.3"
+val fs2Version = "3.2.4"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
-val scalaJSDomVersion = "2.0.0"
+val scalaJSDomVersion = "2.1.0"
 val circeVersion = "0.15.0-M1"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
@@ -65,7 +83,7 @@ lazy val dom = project
     description := "http4s browser integrations",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
-      "co.fs2" %%% "fs2-io" % fs2Version,
+      "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
     ),
@@ -171,6 +189,10 @@ lazy val docs =
   project
     .in(file("mdocs"))
     .settings(
+      libraryDependencies ++= Seq(
+        "org.scala-js" %% "scalajs-compiler" % scalaJSVersion cross CrossVersion.full,
+        "org.scala-js" %% "scalajs-linker" % scalaJSVersion
+      ),
       fatalWarningsInCI := false,
       mdocJS := Some(jsdocs),
       mdocVariables ++= Map(
@@ -249,10 +271,22 @@ lazy val docs =
 ThisBuild / githubWorkflowAddedJobs +=
   WorkflowJob(
     "site",
+    "Build Site",
+    scalas = List(crossScalaVersions.value.head),
+    javas = githubWorkflowJavaVersions.value.toList,
+    steps = githubWorkflowJobSetup.value.toList ::: List(
+      WorkflowStep.Sbt(List("docs/mdoc", "docs/laikaSite"), name = Some("Generate"))
+    )
+  )
+
+ThisBuild / githubWorkflowAddedJobs +=
+  WorkflowJob(
+    "publish-site",
     "Publish Site",
-    scalas = List(crossScalaVersions.value.last),
+    scalas = List(crossScalaVersions.value.head),
+    javas = githubWorkflowJavaVersions.value.toList,
     cond = Some("github.event_name != 'pull_request'"),
-    needs = List("build"),
+    needs = List("build", "site"),
     steps = githubWorkflowJobSetup.value.toList ::: List(
       WorkflowStep.Sbt(List("docs/mdoc", "docs/laikaSite"), name = Some("Generate")),
       WorkflowStep.Use(
