@@ -182,6 +182,13 @@ lazy val docs =
   project
     .in(file("mdocs"))
     .settings(
+      crossScalaVersions := {
+        (ThisBuild / crossScalaVersions).value.filterNot(_.startsWith("3"))
+      },
+      libraryDependencies ++= Seq(
+        "org.scala-js" %% "scalajs-compiler" % scalaJSVersion cross CrossVersion.full,
+        "org.scala-js" %% "scalajs-linker" % scalaJSVersion
+      ),
       fatalWarningsInCI := false,
       mdocJS := Some(jsdocs),
       mdocVariables ++= Map(
