@@ -34,6 +34,7 @@ ThisBuild / startYear := Some(2021)
 
 enablePlugins(TypelevelCiReleasePlugin)
 ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
+ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 
 ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
