@@ -123,7 +123,7 @@ lazy val dom = project
       "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    ),
+    )
   )
   .enablePlugins(ScalaJSPlugin)
 
