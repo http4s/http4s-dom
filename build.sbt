@@ -23,45 +23,22 @@ import JSEnv._
 
 name := "http4s-dom"
 
-ThisBuild / baseVersion := "0.2"
+ThisBuild / tlBaseVersion := "0.2"
 
 ThisBuild / organization := "org.http4s"
 ThisBuild / organizationName := "http4s.org"
-ThisBuild / publishGithubUser := "armanbilge"
-ThisBuild / publishFullName := "Arman Bilge"
+ThisBuild / developers := List(
+  tlGitHubDev("armanbilge", "Arman Bilge")
+)
+ThisBuild / startYear := Some(2021)
 
-enablePlugins(SonatypeCiReleasePlugin)
+enablePlugins(TypelevelCiReleasePlugin)
 ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
-
-ThisBuild / homepage := Some(url("https://github.com/http4s/http4s-dom"))
-ThisBuild / scmInfo := Some(
-  ScmInfo(
-    url("https://github.com/http4s/http4s-dom"),
-    "https://github.com/http4s/http4s-dom.git"))
+ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 
 ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
 
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
-
-ThisBuild / githubWorkflowGeneratedUploadSteps ~= { steps =>
-  steps.flatMap {
-    case compressStep @ WorkflowStep.Run(
-          command :: _,
-          _,
-          Some("Compress target directories"),
-          _,
-          _,
-          _) =>
-      val mkdirStep = WorkflowStep.Run(
-        commands = List(command.replace("tar cf targets.tar", "mkdir -p")),
-        name = Some("Make target directories")
-      )
-      List(mkdirStep, compressStep)
-    case step => List(step)
-  }
-}
-
-replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
+tlReplaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
 addCommandAlias("ciFirefox", CI.Firefox.toString)
 addCommandAlias("ciChrome", CI.Chrome.toString)
 
@@ -146,9 +123,7 @@ lazy val dom = project
       "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    ),
-    // TODO sbt-spiewak doesn't like sjs :(
-    mimaPreviousArtifacts ~= { _.map(a => a.organization %% "http4s-dom_sjs1" % a.revision) }
+    )
   )
   .enablePlugins(ScalaJSPlugin)
 
@@ -171,7 +146,7 @@ lazy val jsdocs =
   project
     .dependsOn(dom)
     .settings(
-      fatalWarningsInCI := false, // Remove once mdocjs bumps to sjs-dom v2
+      tlFatalWarningsInCi := false,
       libraryDependencies ++= Seq(
         "org.http4s" %%% "http4s-circe" % http4sVersion,
         "io.circe" %%% "circe-generic" % "0.15.0-M1"
@@ -204,7 +179,7 @@ lazy val docs =
         "org.scala-js" %% "scalajs-compiler" % scalaJSVersion cross CrossVersion.full,
         "org.scala-js" %% "scalajs-linker" % scalaJSVersion
       ),
-      fatalWarningsInCI := false,
+      tlFatalWarningsInCi := false,
       mdocJS := Some(jsdocs),
       mdocVariables ++= Map(
         "js-opt" -> "fast",

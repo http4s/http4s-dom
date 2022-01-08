@@ -6,8 +6,8 @@ buildInfoKeys += "http4sVersion" -> http4sVersion
 libraryDependencies += "org.scala-js" %% "scalajs-env-selenium" % "1.1.1"
 libraryDependencies += "org.http4s" %% "http4s-ember-server" % http4sVersion
 
-addSbtPlugin("com.codecommit" % "sbt-spiewak-sonatype" % "0.23.0")
-addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.4.6")
+resolvers += Resolver.sonatypeRepo("snapshots")
+addSbtPlugin("org.typelevel" % "sbt-typelevel" % "0.4-f8f808f-SNAPSHOT")
 addSbtPlugin("org.scala-js" % "sbt-scalajs" % "1.8.0")
 addSbtPlugin("com.eed3si9n" % "sbt-buildinfo" % "0.10.0")
 addSbtPlugin("org.scalameta" % "sbt-mdoc" % "2.2.24")
