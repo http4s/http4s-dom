@@ -35,8 +35,6 @@ jobs:
             browser: Firefox
           - scala: 3.1.0
             browser: Firefox
-          - scala: 2.13.7
-            browser: Firefox
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)

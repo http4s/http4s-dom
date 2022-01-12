@@ -41,7 +41,7 @@ ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "F
 ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
 ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
   for {
-    scala <- (ThisBuild / crossScalaVersions).value
+    scala <- (ThisBuild / crossScalaVersions).value.init
   } yield MatrixExclude(Map("scala" -> scala, "browser" -> "Firefox"))
 }
 
