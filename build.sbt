@@ -36,7 +36,7 @@ enablePlugins(TypelevelCiReleasePlugin)
 ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 
-ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.8")
 ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
 ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
 ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
