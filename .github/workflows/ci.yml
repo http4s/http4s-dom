@@ -73,6 +73,9 @@ jobs:
       - name: Check binary compatibility
         run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' mimaReportBinaryIssues'
 
+      - name: Generate API documentation
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' doc'
+
       - name: Make target directories
         run: mkdir -p target mdocs/target tests/target dom/target jsdocs/target project/target
 
