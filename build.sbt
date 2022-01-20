@@ -32,9 +32,9 @@ ThisBuild / developers := List(
 )
 ThisBuild / startYear := Some(2021)
 
-enablePlugins(TypelevelCiReleasePlugin)
 ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
+ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
 ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.8")
 ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
@@ -44,8 +44,6 @@ ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
     scala <- (ThisBuild / crossScalaVersions).value.init
   } yield MatrixExclude(Map("scala" -> scala, "browser" -> "Firefox"))
 }
-
-addCommandAlias("prePR", "; root/clean; scalafmtSbt; +root/scalafmtAll; +root/headerCreate")
 
 lazy val useJSEnv = settingKey[JSEnv]("Browser for running Scala.js tests")
 Global / useJSEnv := Chrome
@@ -152,7 +150,7 @@ lazy val jsdocs =
       tlFatalWarningsInCi := false,
       libraryDependencies ++= Seq(
         "org.http4s" %%% "http4s-circe" % http4sVersion,
-        "io.circe" %%% "circe-generic" % "0.15.0-M1"
+        "io.circe" %%% "circe-generic" % circeVersion
       )
     )
     .enablePlugins(ScalaJSPlugin)
@@ -174,118 +172,94 @@ import laika.theme.config.Color
 
 Global / excludeLintKeys += laikaDescribe
 
-lazy val docs =
-  project
-    .in(file("mdocs"))
-    .settings(
-      libraryDependencies ++= Seq(
-        "org.scala-js" %% "scalajs-compiler" % scalaJSVersion cross CrossVersion.full,
-        "org.scala-js" %% "scalajs-linker" % scalaJSVersion
-      ),
-      tlFatalWarningsInCi := false,
-      mdocJS := Some(jsdocs),
-      mdocVariables ++= Map(
-        "js-opt" -> "fast",
-        "HTTP4S_VERSION" -> http4sVersion,
-        "CIRCE_VERSION" -> circeVersion
-      ),
-      Laika / sourceDirectories := Seq(mdocOut.value),
-      laikaDescribe := "<disabled>",
-      laikaConfig ~= { _.withRawContent },
-      laikaExtensions ++= Seq(
-        laika.markdown.github.GitHubFlavor,
-        laika.parse.code.SyntaxHighlighting
-      ),
-      laikaTheme := Helium
-        .defaults
-        .all
-        .metadata(
-          language = Some("en"),
-          title = Some("http4s-dom")
-        )
-        .site
-        .autoLinkJS() // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
-        .site
-        .layout(
-          contentWidth = px(860),
-          navigationWidth = px(275),
-          topBarHeight = px(35),
-          defaultBlockSpacing = px(10),
-          defaultLineHeight = 1.5,
-          anchorPlacement = laika.helium.config.AnchorPlacement.Right
-        )
-        .site
-        .themeColors(
-          primary = Color.hex("5B7980"),
-          secondary = Color.hex("cc6600"),
-          primaryMedium = Color.hex("a7d4de"),
-          primaryLight = Color.hex("e9f1f2"),
-          text = Color.hex("5f5f5f"),
-          background = Color.hex("ffffff"),
-          bgGradient =
-            (Color.hex("334044"), Color.hex("5B7980")) // only used for landing page background
-        )
-        .site
-        .favIcons(
-          Favicon
-            .external("https://http4s.org/images/http4s-favicon.svg", "32x32", "image/svg+xml")
-            .copy(sizes = None),
-          Favicon.external("https://http4s.org/images/http4s-favicon.png", "32x32", "image/png")
-        )
-        .site
-        .darkMode
-        .disabled
-        .site
-        .topNavigationBar(
-          homeLink = ImageLink.external(
-            "https://http4s.org",
-            Image.external("https://http4s.org/v1.0/images/http4s-logo-text-dark-2.svg")),
-          navLinks = Seq(
-            IconLink.external(
-              "https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/index.html",
-              HeliumIcon.api,
-              options = Styles("svg-link")),
-            IconLink.external(
-              "https://github.com/http4s/http4s-dom",
-              HeliumIcon.github,
-              options = Styles("svg-link")),
-            IconLink.external("https://discord.gg/XF3CXcMzqD", HeliumIcon.chat),
-            IconLink.external("https://twitter.com/http4s", HeliumIcon.twitter)
-          )
-        )
-        .build
-    )
-    .enablePlugins(MdocPlugin, LaikaPlugin)
-
-ThisBuild / githubWorkflowAddedJobs +=
-  WorkflowJob(
-    "site",
-    "Build Site",
-    scalas = List(crossScalaVersions.value.head),
-    javas = githubWorkflowJavaVersions.value.toList,
-    steps = githubWorkflowJobSetup.value.toList ::: List(
-      WorkflowStep.Sbt(List("docs/mdoc", "docs/laikaSite"), name = Some("Generate"))
-    )
-  )
-
-ThisBuild / githubWorkflowAddedJobs +=
-  WorkflowJob(
-    "publish-site",
-    "Publish Site",
-    scalas = List(crossScalaVersions.value.head),
-    javas = githubWorkflowJavaVersions.value.toList,
-    cond = Some("github.event_name != 'pull_request'"),
-    needs = List("build", "site"),
-    steps = githubWorkflowJobSetup.value.toList ::: List(
-      WorkflowStep.Sbt(List("docs/mdoc", "docs/laikaSite"), name = Some("Generate")),
-      WorkflowStep.Use(
-        UseRef.Public("peaceiris", "actions-gh-pages", "v3"),
-        Map(
-          "github_token" -> "${{ secrets.GITHUB_TOKEN }}",
-          "publish_dir" -> "./mdocs/target/docs/site",
-          "publish_branch" -> "gh-pages"
-        ),
-        name = Some("Publish")
+lazy val docs = project
+  .in(file("site"))
+  .settings(
+    libraryDependencies += "org.scala-js" %% "scalajs-linker" % scalaJSVersion,
+    libraryDependencies += {
+      scalaBinaryVersion.value match {
+        // keep these pinned to mdoc.js Scala versions
+        // scala-steward:off
+        case "2.12" =>
+          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
+            CrossVersion.constant("2.12.15"))
+        case "2.13" =>
+          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
+            CrossVersion.constant("2.13.6"))
+        // scala-steward:on
+      }
+    },
+    tlFatalWarningsInCi := false,
+    mdocJS := Some(jsdocs),
+    mdocVariables ++= Map(
+      "js-opt" -> "fast",
+      "HTTP4S_VERSION" -> http4sVersion,
+      "CIRCE_VERSION" -> circeVersion
+    ),
+    Laika / sourceDirectories := Seq(mdocOut.value),
+    laikaDescribe := "<disabled>",
+    laikaConfig ~= { _.withRawContent },
+    laikaExtensions ++= Seq(
+      laika.markdown.github.GitHubFlavor,
+      laika.parse.code.SyntaxHighlighting
+    ),
+    laikaTheme := Helium
+      .defaults
+      .all
+      .metadata(
+        language = Some("en"),
+        title = Some("http4s-dom")
       )
-    )
+      .site
+      .autoLinkJS() // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
+      .site
+      .layout(
+        contentWidth = px(860),
+        navigationWidth = px(275),
+        topBarHeight = px(35),
+        defaultBlockSpacing = px(10),
+        defaultLineHeight = 1.5,
+        anchorPlacement = laika.helium.config.AnchorPlacement.Right
+      )
+      .site
+      .themeColors(
+        primary = Color.hex("5B7980"),
+        secondary = Color.hex("cc6600"),
+        primaryMedium = Color.hex("a7d4de"),
+        primaryLight = Color.hex("e9f1f2"),
+        text = Color.hex("5f5f5f"),
+        background = Color.hex("ffffff"),
+        bgGradient =
+          (Color.hex("334044"), Color.hex("5B7980")) // only used for landing page background
+      )
+      .site
+      .favIcons(
+        Favicon
+          .external("https://http4s.org/images/http4s-favicon.svg", "32x32", "image/svg+xml")
+          .copy(sizes = None),
+        Favicon.external("https://http4s.org/images/http4s-favicon.png", "32x32", "image/png")
+      )
+      .site
+      .darkMode
+      .disabled
+      .site
+      .topNavigationBar(
+        homeLink = ImageLink.external(
+          "https://http4s.org",
+          Image.external("https://http4s.org/v1.0/images/http4s-logo-text-dark-2.svg")),
+        navLinks = Seq(
+          IconLink.external(
+            "https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/index.html",
+            HeliumIcon.api,
+            options = Styles("svg-link")),
+          IconLink.external(
+            "https://github.com/http4s/http4s-dom",
+            HeliumIcon.github,
+            options = Styles("svg-link")),
+          IconLink.external("https://discord.gg/XF3CXcMzqD", HeliumIcon.chat),
+          IconLink.external("https://twitter.com/http4s", HeliumIcon.twitter)
+        )
+      )
+      .build
   )
+  .enablePlugins(TypelevelSitePlugin)
