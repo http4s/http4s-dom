@@ -183,7 +183,7 @@ lazy val docs = project
         case "2.12" =>
           ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
             CrossVersion.constant("2.12.15"))
-        case "2.13" =>
+        case "2.13" | "3" =>
           ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
             CrossVersion.constant("2.13.6"))
         // scala-steward:on
