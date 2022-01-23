@@ -25,6 +25,7 @@ jobs:
   build:
     name: Build and Test
     strategy:
+      fail-fast: false
       matrix:
         os: [ubuntu-latest]
         scala: [2.12.15, 3.1.0, 2.13.8]
@@ -75,6 +76,9 @@ jobs:
 
       - name: Generate API documentation
         run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' doc'
+
+      - name: Check unused compile dependencies
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' unusedCompileDependenciesTest'
 
       - name: Make target directories
         run: mkdir -p target site/target tests/target dom/target jsdocs/target project/target
