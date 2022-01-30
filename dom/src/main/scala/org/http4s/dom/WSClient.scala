@@ -103,16 +103,12 @@ object WSClient {
           drained
             .get
             .race(messages.take.flatMap[Option[WSDataFrame]] {
-              case None => drained.complete(()).as(none): F[Option[WSDataFrame]]
+              case None => drained.complete(()).as(none)
               case Some(e) =>
                 e.data match {
-                  case s: String => WSFrame.Text(s).some.pure.widen: F[Option[WSDataFrame]]
+                  case s: String => WSFrame.Text(s).some.pure.widen
                   case b: js.typedarray.ArrayBuffer =>
-                    WSFrame
-                      .Binary(ByteVector.fromJSArrayBuffer(b))
-                      .some
-                      .pure
-                      .widen: F[Option[WSDataFrame]]
+                    WSFrame.Binary(ByteVector.fromJSArrayBuffer(b)).some.pure.widen
                   case _ =>
                     F.raiseError(
                       new WSException(s"Unsupported data: ${js.typeOf(e.data)}")
