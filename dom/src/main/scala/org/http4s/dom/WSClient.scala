@@ -73,9 +73,12 @@ object WSClient {
             }
 
             ws.onerror = e => cb(Left(js.JavaScriptException(e)))
-            ws.onmessage = e => dispatcher.unsafeRunAndForget(F.delay(println("receiving msg")) *> messages.offer(Some(e)))
-            ws.onclose =
-              e => dispatcher.unsafeRunAndForget(F.delay(println("closed")) *> messages.offer(None) *> close.complete(e))
+            ws.onmessage = e =>
+              dispatcher.unsafeRunAndForget(
+                F.delay(println("receiving msg")) *> messages.offer(Some(e)))
+            ws.onclose = e =>
+              dispatcher.unsafeRunAndForget(
+                F.delay(println("closed")) *> messages.offer(None) *> close.complete(e))
           }
         } {
           case (ws, Resource.ExitCase.Succeeded) =>
@@ -131,7 +134,8 @@ object WSClient {
           }
         }
 
-        def sendClose(reason: String): F[Unit] = errorOr(F.delay(println("closing")) *> F.delay(ws.close(reason = reason)))
+        def sendClose(reason: String): F[Unit] = errorOr(
+          F.delay(println("closing")) *> F.delay(ws.close(reason = reason)))
 
         private def errorOr(fu: F[Unit]): F[Unit] = error.tryGet.flatMap {
           case Some(error) => F.rethrow[Unit, Throwable](error.pure.widen)
