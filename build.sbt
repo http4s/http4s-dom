@@ -64,21 +64,22 @@ Global / fileServicePort := {
     _ <- EmberServerBuilder
       .default[IO]
       .withPort(Port.fromInt(0).get)
-      .withHttpApp {
-        Kleisli { req =>
-          fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
-            // TODO find out why mime type is not auto-inferred
-            if (req.uri.renderString.endsWith(".js"))
-              res.withHeaders(
-                "Service-Worker-Allowed" -> "/",
-                "Content-Type" -> "text/javascript"
-              )
-            else res
-          }
-        }
-      }
       .withHttpWebSocketApp { wsb =>
-        HttpRoutes.of[IO] { case Method.GET -> Root => wsb.build(identity) }.orNotFound
+        HttpRoutes
+          .of[IO] {
+            case Method.GET -> Root / "ws" => wsb.build(identity)
+            case req =>
+              fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
+                // TODO find out why mime type is not auto-inferred
+                if (req.uri.renderString.endsWith(".js"))
+                  res.withHeaders(
+                    "Service-Worker-Allowed" -> "/",
+                    "Content-Type" -> "text/javascript"
+                  )
+                else res
+              }
+          }
+          .orNotFound
       }
       .build
       .map(_.address.getPort)
