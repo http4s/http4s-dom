@@ -33,9 +33,11 @@ import org.http4s.client.websocket.WSRequest
 import org.scalajs.dom.CloseEvent
 import org.scalajs.dom.MessageEvent
 import org.scalajs.dom.WebSocket
+import org.typelevel.ci._
 import scodec.bits.ByteVector
 
 import scala.scalajs.js
+import scala.scalajs.js.JSConverters._
 
 final class WSException private[dom] (
     private[dom] val reason: String
@@ -58,10 +60,13 @@ object WSClient {
           F.async_[WebSocket] { cb =>
             if (request.method != Method.GET)
               cb(Left(new IllegalArgumentException("Must be GET Request")))
-            if (!request.headers.isEmpty)
-              cb(Left(new IllegalArgumentException("Custom headers are not supported")))
 
-            val ws = new WebSocket(request.uri.renderString)
+            val protocols = request
+              .headers
+              .get(ci"Sec-WebSocket-Protocol")
+              .fold(List.empty[String])(_.toList.map(_.value))
+
+            val ws = new WebSocket(request.uri.renderString, protocols.toJSArray)
             ws.binaryType = "arraybuffer" // the default is blob
 
             ws.onopen = { _ =>
