@@ -67,7 +67,8 @@ Global / fileServicePort := {
       .withHttpWebSocketApp { wsb =>
         HttpRoutes
           .of[IO] {
-            case Method.GET -> Root / "ws" => wsb.build(identity)
+            case Method.GET -> Root / "ws" =>
+              wsb.build(_.debug(x => s"ECHO DEBUG: $x"))
             case req =>
               fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
                 // TODO find out why mime type is not auto-inferred
