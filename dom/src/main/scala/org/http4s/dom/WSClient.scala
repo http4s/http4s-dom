@@ -129,8 +129,8 @@ object WSClient {
           }
         }
 
-        def sendClose(reason: String): F[Unit] = errorOr(
-          F.delay(println("closing")) *> F.delay(ws.close(1000, reason)))
+        def sendClose(reason: String): F[Unit] =
+          F.raiseError(new UnsupportedOperationException)
 
         private def errorOr(fu: F[Unit]): F[Unit] = error.tryGet.flatMap {
           case Some(error) => F.rethrow[Unit, Throwable](error.pure.widen)

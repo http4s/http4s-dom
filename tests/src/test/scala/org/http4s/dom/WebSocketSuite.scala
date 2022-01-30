@@ -26,8 +26,6 @@ import scodec.bits.ByteVector
 
 class WebSocketSuite extends CatsEffectSuite {
 
-  import scala.concurrent.duration._
-
   test("send and receive frames") {
     WSClient[IO]
       .connectHighLevel(
@@ -36,11 +34,8 @@ class WebSocketSuite extends CatsEffectSuite {
         for {
           _ <- conn.send(WSFrame.Binary(ByteVector(15, 2, 3)))
           _ <- conn.sendMany(List(WSFrame.Text("foo"), WSFrame.Text("bar")))
-          _ <- IO.sleep(3.second)
-          _ <- conn.sendClose()
-          recv <- conn.receiveStream.compile.toList
+          recv <- conn.receiveStream.take(3).compile.toList
           _ <- IO.println(recv)
-          _ <- IO.sleep(1.second)
         } yield recv
       }
       .assertEquals(
