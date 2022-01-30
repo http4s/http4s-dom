@@ -73,8 +73,13 @@ object WSClient {
 
             ws.onerror = e => cb(Left(js.JavaScriptException(e)))
             ws.onmessage = e =>
-              dispatcher.unsafeRunAndForget(
-                F.delay(println(s"receiving msg ${e.data}")) *> messages.offer(Some(e)))
+              dispatcher.unsafeRunAndForget(F.delay {
+                e.data match {
+                  case b: js.typedarray.ArrayBuffer =>
+                    println(s"receiving msg ${ByteVector.fromJSArrayBuffer(b)}")
+                  case _ => println(s"receiving msg ${e.data}")
+                }
+              } *> messages.offer(Some(e)))
             ws.onclose = e =>
               dispatcher.unsafeRunAndForget(
                 F.delay(println("closed")) *> messages.offer(None) *> close.complete(e))
