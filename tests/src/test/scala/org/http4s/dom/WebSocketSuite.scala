@@ -28,9 +28,8 @@ class WebSocketSuite extends CatsEffectSuite {
 
   test("send and receive frames") {
     WSClient[IO]
-      .connectHighLevel(
-        WSRequest(Uri.fromString(s"ws://echo.websocket.events").toOption.get))
-        // WSRequest(Uri.fromString(s"ws://localhost:${fileServicePort}/ws").toOption.get))
+      .connectHighLevel(WSRequest(Uri.fromString(s"ws://echo.websocket.events").toOption.get))
+      // WSRequest(Uri.fromString(s"ws://localhost:${fileServicePort}/ws").toOption.get))
       .use { conn =>
         for {
           _ <- conn.send(WSFrame.Binary(ByteVector(15, 2, 3)))
