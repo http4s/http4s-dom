@@ -79,21 +79,33 @@ object WSClient {
               dispatcher.unsafeRunAndForget(
                 F.delay(println("closed")) *> messages.offer(None) *> close.complete(e))
           }
-        } { // 1000 "normal closure" is only code supported in browser
-          case (ws, Resource.ExitCase.Succeeded) =>
-            F.delay(ws.close(1000))
-          case (ws, Resource.ExitCase.Errored(ex: WSException)) =>
-            F.delay(ws.close(1000, ex.reason))
-          case (ws, Resource.ExitCase.Errored(ex)) =>
-            val reason = ex.toString
-            // reason must be no longer than 123 bytes of UTF-8 text
-            // UTF-8 character is max 4 bytes so we can fast-path
-            if (reason.length <= 30 || reason.getBytes.length <= 123)
-              F.delay(ws.close(1000, reason))
-            else
-              F.delay(ws.close(1000))
-          case (ws, Resource.ExitCase.Canceled) =>
-            F.delay(ws.close(1000, "canceled"))
+        } {
+          case (ws, exitCase) =>
+            val reason = exitCase match {
+              case Resource.ExitCase.Succeeded =>
+                None
+              case Resource.ExitCase.Errored(ex: WSException) =>
+                Some(ex.reason)
+              case Resource.ExitCase.Errored(ex) =>
+                val reason = ex.toString
+                // reason must be no longer than 123 bytes of UTF-8 text
+                // UTF-8 character is max 4 bytes so we can fast-path
+                if (reason.length <= 30 || reason.getBytes.length <= 123)
+                  Some(reason)
+                else
+                  None
+              case Resource.ExitCase.Canceled =>
+                Some("canceled")
+            }
+
+            F.async_[CloseEvent] { cb =>
+              ws.onerror = e => cb(Left(js.JavaScriptException(e)))
+              ws.onclose = e => cb(Right(e))
+              reason match { // 1000 "normal closure" is only code supported in browser
+                case Some(reason) => ws.close(1000, reason)
+                case None => ws.close(1000)
+              }
+            }.flatMap(close.complete(_)) *> messages.offer(None)
         }
       } yield new WSConnection[F] {
 
