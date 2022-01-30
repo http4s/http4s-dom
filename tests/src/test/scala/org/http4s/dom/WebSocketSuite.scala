@@ -36,7 +36,7 @@ class WebSocketSuite extends CatsEffectSuite {
         for {
           _ <- conn.send(WSFrame.Binary(ByteVector(15, 2, 3)))
           _ <- conn.sendMany(List(WSFrame.Text("foo"), WSFrame.Text("bar")))
-          _ <- IO.sleep(1.second)
+          _ <- IO.sleep(3.second)
           _ <- conn.sendClose()
           recv <- conn.receiveStream.compile.toList
           _ <- IO.println(recv)
