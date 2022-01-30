@@ -38,7 +38,6 @@ import scodec.bits.ByteVector
 import scala.scalajs.js
 
 final class WSException private[dom] (
-    private[dom] val code: Int,
     private[dom] val reason: String
 ) extends RuntimeException(reason)
 
@@ -80,21 +79,21 @@ object WSClient {
               dispatcher.unsafeRunAndForget(
                 F.delay(println("closed")) *> messages.offer(None) *> close.complete(e))
           }
-        } {
+        } { // 1000 "normal closure" is only code supported in browser
           case (ws, Resource.ExitCase.Succeeded) =>
-            F.delay(ws.close(1000)) // Normal Closure
+            F.delay(ws.close(1000))
           case (ws, Resource.ExitCase.Errored(ex: WSException)) =>
-            F.delay(ws.close(ex.code, ex.reason))
+            F.delay(ws.close(1000, ex.reason))
           case (ws, Resource.ExitCase.Errored(ex)) =>
             val reason = ex.toString
             // reason must be no longer than 123 bytes of UTF-8 text
             // UTF-8 character is max 4 bytes so we can fast-path
             if (reason.length <= 30 || reason.getBytes.length <= 123)
-              F.delay(ws.close(1006, reason)) // Abnormal Closure
+              F.delay(ws.close(1000, reason))
             else
-              F.delay(ws.close(1006))
+              F.delay(ws.close(1000))
           case (ws, Resource.ExitCase.Canceled) =>
-            F.delay(ws.close(1006, "canceled"))
+            F.delay(ws.close(1000, "canceled"))
         }
       } yield new WSConnection[F] {
 
@@ -116,7 +115,7 @@ object WSClient {
                       .widen: F[Option[WSDataFrame]]
                   case _ =>
                     F.raiseError(
-                      new WSException(1003, s"Unsupported data: ${js.typeOf(e.data)}")
+                      new WSException(s"Unsupported data: ${js.typeOf(e.data)}")
                     )
                 }
             })
@@ -135,7 +134,7 @@ object WSClient {
         }
 
         def sendClose(reason: String): F[Unit] = errorOr(
-          F.delay(println("closing")) *> F.delay(ws.close(reason = reason)))
+          F.delay(println("closing")) *> F.delay(ws.close(1000, reason)))
 
         private def errorOr(fu: F[Unit]): F[Unit] = error.tryGet.flatMap {
           case Some(error) => F.rethrow[Unit, Throwable](error.pure.widen)
