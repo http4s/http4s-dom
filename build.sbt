@@ -61,9 +61,9 @@ Global / fileServicePort := {
 
   (for {
     deferredPort <- IO.deferred[Int]
-    _ <- org.http4s.blaze.server.BlazeServerBuilder[IO]
-
-      // .withPort(Port.fromInt(0).get)
+    _ <- EmberServerBuilder
+      .default[IO]
+      .withPort(Port.fromInt(0).get)
       .withHttpWebSocketApp { wsb =>
         HttpRoutes
           .of[IO] {
@@ -81,7 +81,7 @@ Global / fileServicePort := {
           }
           .orNotFound
       }
-      .resource
+      .build
       .map(_.address.getPort)
       .evalTap(deferredPort.complete(_))
       .useForever
