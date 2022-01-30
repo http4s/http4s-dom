@@ -20,6 +20,8 @@ import cats.effect.kernel.Async
 import cats.effect.kernel.Resource
 import cats.syntax.all._
 import fs2.Stream
+import org.http4s.client.websocket.WSClientHighLevel
+import org.http4s.client.websocket.WSConnectionHighLevel
 import org.scalajs.dom.Blob
 import org.scalajs.dom.File
 import org.scalajs.dom.ReadableStream
@@ -31,6 +33,9 @@ import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.typedarray.Uint8Array
 
 package object dom {
+
+  type WSClient[F[_]] = WSClientHighLevel[F]
+  type WSConnection[F[_]] = WSConnectionHighLevel[F]
 
   implicit def fileEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, File] =
     blobEncoder.narrow
