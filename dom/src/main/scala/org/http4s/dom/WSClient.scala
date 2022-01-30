@@ -74,7 +74,7 @@ object WSClient {
             ws.onerror = e => cb(Left(js.JavaScriptException(e)))
             ws.onmessage = e =>
               dispatcher.unsafeRunAndForget(
-                F.delay(println("receiving msg")) *> messages.offer(Some(e)))
+                F.delay(println(s"receiving msg ${e.data}")) *> messages.offer(Some(e)))
             ws.onclose = e =>
               dispatcher.unsafeRunAndForget(
                 F.delay(println("closed")) *> messages.offer(None) *> close.complete(e))
