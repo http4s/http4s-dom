@@ -54,6 +54,8 @@ Global / fileServicePort := {
   import cats.effect.IO
   import cats.effect.unsafe.implicits.global
   import com.comcast.ip4s.Port
+  import org.http4s._
+  import org.http4s.dsl.io._
   import org.http4s.ember.server.EmberServerBuilder
   import org.http4s.server.staticcontent._
 
@@ -74,6 +76,9 @@ Global / fileServicePort := {
             else res
           }
         }
+      }
+      .withHttpWebSocketApp { wsb =>
+        HttpRoutes.of[IO] { case Method.GET -> Root => wsb.build(identity) }.orNotFound
       }
       .build
       .map(_.address.getPort)
@@ -133,7 +138,7 @@ lazy val tests = project
   .settings(
     scalaJSUseMainModuleInitializer := true,
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
-    buildInfoKeys := Seq[BuildInfoKey](scalaVersion),
+    buildInfoKeys := Seq[BuildInfoKey](scalaVersion, fileServicePort),
     buildInfoPackage := "org.http4s.dom",
     libraryDependencies ++= Seq(
       "org.scalameta" %%% "munit" % munitVersion % Test,
@@ -154,23 +159,6 @@ lazy val jsdocs =
       )
     )
     .enablePlugins(ScalaJSPlugin)
-
-import laika.ast.Path.Root
-import laika.ast._
-import laika.ast.LengthUnit._
-import laika.helium.Helium
-import laika.helium.config.{
-  Favicon,
-  HeliumIcon,
-  IconLink,
-  ImageLink,
-  ReleaseInfo,
-  Teaser,
-  TextLink
-}
-import laika.theme.config.Color
-
-Global / excludeLintKeys += laikaDescribe
 
 lazy val docs = project
   .in(file("site"))
@@ -196,7 +184,6 @@ lazy val docs = project
       "HTTP4S_VERSION" -> http4sVersion,
       "CIRCE_VERSION" -> circeVersion
     ),
-    laikaDescribe := "<disabled>",
     laikaConfig ~= { _.withRawContent },
     tlSiteHeliumConfig ~= {
       // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
