@@ -22,11 +22,11 @@ import cats.effect.kernel.Deferred
 import cats.effect.kernel.DeferredSink
 import cats.effect.kernel.Resource
 import cats.effect.std.Dispatcher
+import cats.effect.std.Queue
 import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.INothing
-import fs2.Stream
-import fs2.concurrent.Channel
+import org.http4s.Method
 import org.http4s.client.websocket.WSDataFrame
 import org.http4s.client.websocket.WSFrame
 import org.http4s.client.websocket.WSRequest
@@ -36,7 +36,6 @@ import org.scalajs.dom.WebSocket
 import scodec.bits.ByteVector
 
 import scala.scalajs.js
-import org.http4s.Method
 
 final class WSException private[dom] (
     private[dom] val code: Int,
@@ -49,7 +48,8 @@ object WSClient {
     def connectHighLevel(request: WSRequest): Resource[F, WSConnection[F]] =
       for {
         dispatcher <- Dispatcher[F]
-        messages <- Resource.make(Channel.unbounded[F, MessageEvent])(_.closed)
+        messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
+        drained <- F.deferred[Unit].toResource
         error <- F.deferred[Either[Throwable, INothing]].toResource
         closeF <- F.deferred[WSFrame.Close].toResource
         close = (closeF: DeferredSink[F, WSFrame.Close]).contramap[CloseEvent] { e =>
@@ -73,8 +73,9 @@ object WSClient {
             }
 
             ws.onerror = e => cb(Left(js.JavaScriptException(e)))
-            ws.onmessage = e => dispatcher.unsafeRunAndForget(messages.send(e))
-            ws.onclose = e => dispatcher.unsafeRunAndForget(close.complete(e) *> messages.close)
+            ws.onmessage = e => dispatcher.unsafeRunAndForget(F.delay(println("receiving msg")) *> messages.offer(Some(e)))
+            ws.onclose =
+              e => dispatcher.unsafeRunAndForget(F.delay(println("closed")) *> messages.offer(None) *> close.complete(e))
           }
         } {
           case (ws, Resource.ExitCase.Succeeded) =>
@@ -93,42 +94,49 @@ object WSClient {
             F.delay(ws.close(1006, "canceled"))
         }
       } yield new WSConnection[F] {
+
         def closeFrame: Deferred[F, WSFrame.Close] = closeF
 
         def receive: F[Option[WSDataFrame]] =
-          messages
-            .isClosed
-            .ifM(
-              none.pure,
-              messages
-                .stream
-                .head
-                .evalMap[F, WSDataFrame] { event =>
-                  event.data match {
-                    case s: String => WSFrame.Text(s).pure.widen
-                    case b: js.typedarray.ArrayBuffer =>
-                      WSFrame.Binary(ByteVector.fromJSArrayBuffer(b)).pure.widen
-                    case _ =>
-                      F.raiseError(
-                        new WSException(1003, s"Unsupported data: ${js.typeOf(event.data)}")
-                      )
-                  }
+          drained
+            .get
+            .race(messages.take.flatMap[Option[WSDataFrame]] {
+              case None => drained.complete(()).as(none): F[Option[WSDataFrame]]
+              case Some(e) =>
+                e.data match {
+                  case s: String => WSFrame.Text(s).some.pure.widen: F[Option[WSDataFrame]]
+                  case b: js.typedarray.ArrayBuffer =>
+                    WSFrame
+                      .Binary(ByteVector.fromJSArrayBuffer(b))
+                      .some
+                      .pure
+                      .widen: F[Option[WSDataFrame]]
+                  case _ =>
+                    F.raiseError(
+                      new WSException(1003, s"Unsupported data: ${js.typeOf(e.data)}")
+                    )
                 }
-                .concurrently[F, WSDataFrame](
-                  Stream.eval(error.get.rethrow)
-                )
-                .compile
-                .last
-            )
+            })
+            .map(_.toOption.flatten)
+            .race(error.get.rethrow)
+            .map(_.merge)
 
-        def send(wsf: WSDataFrame): F[Unit] = wsf match {
-          case WSFrame.Text(data, true) => F.delay(ws.send(data))
-          case WSFrame.Binary(data, true) => F.delay(ws.send(data.toJSArrayBuffer))
-          case _ =>
-            F.raiseError(new IllegalArgumentException("DataFrames cannot be fragmented"))
+        def send(wsf: WSDataFrame): F[Unit] = errorOr {
+          println("send msg")
+          wsf match {
+            case WSFrame.Text(data, true) => F.delay(ws.send(data))
+            case WSFrame.Binary(data, true) => F.delay(ws.send(data.toJSArrayBuffer))
+            case _ =>
+              F.raiseError(new IllegalArgumentException("DataFrames cannot be fragmented"))
+          }
         }
 
-        def sendClose(reason: String): F[Unit] = F.delay(ws.close(reason = reason))
+        def sendClose(reason: String): F[Unit] = errorOr(F.delay(println("closing")) *> F.delay(ws.close(reason = reason)))
+
+        private def errorOr(fu: F[Unit]): F[Unit] = error.tryGet.flatMap {
+          case Some(error) => F.rethrow[Unit, Throwable](error.pure.widen)
+          case None => fu
+        }
 
         def sendMany[G[_]: Foldable, A <: WSDataFrame](wsfs: G[A]): F[Unit] =
           wsfs.foldMapM(send(_))
