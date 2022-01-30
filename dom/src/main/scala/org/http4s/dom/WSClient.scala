@@ -36,6 +36,7 @@ import org.scalajs.dom.WebSocket
 import scodec.bits.ByteVector
 
 import scala.scalajs.js
+import org.http4s.Method
 
 final class WSException private[dom] (
     private[dom] val code: Int,
@@ -56,14 +57,22 @@ object WSClient {
         }
         ws <- Resource.makeCase {
           F.async_[WebSocket] { cb =>
+
+            if (request.method != Method.GET)
+              cb(Left(new IllegalArgumentException("Must be GET Request")))
+            if (!request.headers.isEmpty)
+              cb(Left(new IllegalArgumentException("Custom headers are not supported")))
+
             val ws = new WebSocket(request.uri.renderString)
             ws.binaryType = "arraybuffer" // the default is blob
+
             ws.onopen = { _ =>
               ws.onerror = // replace the error handler
                 e =>
                   dispatcher.unsafeRunAndForget(error.complete(Left(js.JavaScriptException(e))))
               cb(Right(ws))
             }
+            
             ws.onerror = e => cb(Left(js.JavaScriptException(e)))
             ws.onmessage = e => dispatcher.unsafeRunAndForget(messages.send(e))
             ws.onclose = e => dispatcher.unsafeRunAndForget(close.complete(e) *> messages.close)
