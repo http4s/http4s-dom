@@ -21,21 +21,20 @@ import munit.CatsEffectSuite
 import org.http4s.Uri
 import org.http4s.client.websocket.WSFrame
 import org.http4s.client.websocket.WSRequest
-// import org.http4s.dom.BuildInfo.fileServicePort
+import org.http4s.dom.BuildInfo.fileServicePort
 import scodec.bits.ByteVector
 
 class WebSocketSuite extends CatsEffectSuite {
 
   test("send and receive frames") {
     WSClient[IO]
-      .connectHighLevel(WSRequest(Uri.fromString(s"ws://echo.websocket.events").toOption.get))
-      // WSRequest(Uri.fromString(s"ws://localhost:${fileServicePort}/ws").toOption.get))
+      .connectHighLevel(
+        WSRequest(Uri.fromString(s"ws://localhost:${fileServicePort}/ws").toOption.get))
       .use { conn =>
         for {
           _ <- conn.send(WSFrame.Binary(ByteVector(15, 2, 3)))
           _ <- conn.sendMany(List(WSFrame.Text("foo"), WSFrame.Text("bar")))
-          recv <- conn.receiveStream.tail.take(3).compile.toList
-          _ <- IO.println(recv)
+          recv <- conn.receiveStream.take(3).compile.toList
         } yield recv
       }
       .assertEquals(

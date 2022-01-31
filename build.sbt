@@ -53,22 +53,21 @@ Global / fileServicePort := {
   import cats.data.Kleisli
   import cats.effect.IO
   import cats.effect.unsafe.implicits.global
-  import com.comcast.ip4s.Port
   import org.http4s._
   import org.http4s.dsl.io._
-  import org.http4s.ember.server.EmberServerBuilder
+  import org.http4s.blaze.server.BlazeServerBuilder
   import org.http4s.server.staticcontent._
+  import java.net.InetSocketAddress
 
   (for {
     deferredPort <- IO.deferred[Int]
-    _ <- org.http4s.blaze.server.BlazeServerBuilder[IO]
-
-      // .withPort(Port.fromInt(0).get)
+    _ <- BlazeServerBuilder[IO]
+      .bindSocketAddress(new InetSocketAddress("localhost", 0))
       .withHttpWebSocketApp { wsb =>
         HttpRoutes
           .of[IO] {
             case Method.GET -> Root / "ws" =>
-              wsb.build(_.debug(x => s"ECHO DEBUG: $x"))
+              wsb.build(identity)
             case req =>
               fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
                 // TODO find out why mime type is not auto-inferred
