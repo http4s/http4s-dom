@@ -18,8 +18,7 @@ package org.http4s.dom
 
 import cats.Foldable
 import cats.effect.kernel.Async
-import cats.effect.kernel.Deferred
-import cats.effect.kernel.DeferredSink
+import cats.effect.kernel.DeferredSource
 import cats.effect.kernel.Resource
 import cats.effect.std.Dispatcher
 import cats.effect.std.Queue
@@ -52,10 +51,7 @@ object WSClient {
         messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
         drained <- F.deferred[Unit].toResource
         error <- F.deferred[Either[Throwable, INothing]].toResource
-        closeF <- F.deferred[WSFrame.Close].toResource
-        close = (closeF: DeferredSink[F, WSFrame.Close]).contramap[CloseEvent] { e =>
-          WSFrame.Close(e.code, e.reason)
-        }
+        close <- F.deferred[CloseEvent].toResource
         ws <- Resource.makeCase {
           F.async_[WebSocket] { cb =>
             if (request.method != Method.GET)
@@ -112,11 +108,12 @@ object WSClient {
               }
               .flatMap(close.complete(_)) *> messages.offer(None)
 
-            closeF.tryGet.map(_.isEmpty).ifM(shutdown, F.unit)
+            close.tryGet.map(_.isEmpty).ifM(shutdown, F.unit)
         }
       } yield new WSConnection[F] {
 
-        def closeFrame: Deferred[F, WSFrame.Close] = closeF
+        def closeFrame: DeferredSource[F, WSFrame.Close] =
+          (close: DeferredSource[F, CloseEvent]).map(e => WSFrame.Close(e.code, e.reason))
 
         def receive: F[Option[WSDataFrame]] =
           drained
@@ -147,9 +144,6 @@ object WSClient {
           }
         }
 
-        def sendClose(reason: String): F[Unit] =
-          F.raiseError(new UnsupportedOperationException)
-
         private def errorOr(fu: F[Unit]): F[Unit] = error.tryGet.flatMap {
           case Some(error) => F.rethrow[Unit, Throwable](error.pure.widen)
           case None => fu
@@ -158,7 +152,7 @@ object WSClient {
         def sendMany[G[_]: Foldable, A <: WSDataFrame](wsfs: G[A]): F[Unit] =
           wsfs.foldMapM(send(_))
 
-        def subprocotol: Option[String] = Option(ws.protocol).filter(_.nonEmpty)
+        def subprotocol: Option[String] = Option(ws.protocol).filter(_.nonEmpty)
       }
   }
 
