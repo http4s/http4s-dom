@@ -35,7 +35,7 @@ ThisBuild / githubWorkflowTargetBranches := Seq("main")
 ThisBuild / tlCiReleaseBranches := Seq("main")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.1", "2.13.8")
+ThisBuild / crossScalaVersions := Seq("3.1.1", "2.13.8")
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
 ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
@@ -105,7 +105,7 @@ ThisBuild / Test / jsEnv := {
 
 val catsEffectVersion = "3.3.5"
 val fs2Version = "3.2.4"
-val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
+val http4sVersion = "1.0.0-M31"
 val scalaJSDomVersion = "2.1.0"
 val circeVersion = "0.15.0-M1"
 val munitVersion = "0.7.29"
