@@ -23,31 +23,27 @@ import JSEnv._
 
 name := "http4s-dom"
 
-ThisBuild / baseVersion := "1.0"
+ThisBuild / tlBaseVersion := "1.0"
+ThisBuild / developers := List(
+  tlGitHubDev("armanbilge", "Arman Bilge")
+)
+ThisBuild / startYear := Some(2021)
+ThisBuild / tlSiteApiUrl := Some(url(
+  "https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/index.html"))
 
-ThisBuild / organization := "org.http4s"
-ThisBuild / organizationName := "http4s.org"
-ThisBuild / publishGithubUser := "armanbilge"
-ThisBuild / publishFullName := "Arman Bilge"
-
-enablePlugins(SonatypeCiReleasePlugin)
 ThisBuild / githubWorkflowTargetBranches := Seq("main")
+ThisBuild / tlCiReleaseBranches := Seq("main")
+ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-ThisBuild / homepage := Some(url("https://github.com/http4s/http4s-dom"))
-ThisBuild / scmInfo := Some(
-  ScmInfo(
-    url("https://github.com/http4s/http4s-dom"),
-    "https://github.com/http4s/http4s-dom.git"))
-
-ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.7")
-
+ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.1", "2.13.8")
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
-
-replaceCommandAlias("ci", CI.AllCIs.map(_.toString).mkString)
-addCommandAlias("ciFirefox", CI.Firefox.toString)
-addCommandAlias("ciChrome", CI.Chrome.toString)
-
-addCommandAlias("prePR", "; root/clean; scalafmtSbt; +root/scalafmtAll; +root/headerCreate")
+ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
+ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
+ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
+  for {
+    scala <- (ThisBuild / crossScalaVersions).value.init
+  } yield MatrixExclude(Map("scala" -> scala, "browser" -> "Firefox"))
+}
 
 lazy val useJSEnv = settingKey[JSEnv]("Browser for running Scala.js tests")
 Global / useJSEnv := Chrome
@@ -107,10 +103,10 @@ ThisBuild / Test / jsEnv := {
   }
 }
 
-val catsEffectVersion = "3.3.0"
-val fs2Version = "3.2.3"
-val http4sVersion = "1.0.0-M30"
-val scalaJSDomVersion = "2.0.0"
+val catsEffectVersion = "3.3.5"
+val fs2Version = "3.2.4"
+val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
+val scalaJSDomVersion = "2.1.0"
 val circeVersion = "0.15.0-M1"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
@@ -125,12 +121,10 @@ lazy val dom = project
     description := "http4s browser integrations",
     libraryDependencies ++= Seq(
       "org.typelevel" %%% "cats-effect" % catsEffectVersion,
-      "co.fs2" %%% "fs2-io" % fs2Version,
+      "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    ),
-    // TODO sbt-spiewak doesn't like sjs :(
-    mimaPreviousArtifacts ~= { _.map(a => a.organization %% "http4s-dom_sjs1" % a.revision) }
+    )
   )
   .enablePlugins(ScalaJSPlugin)
 
@@ -153,10 +147,10 @@ lazy val jsdocs =
   project
     .dependsOn(dom)
     .settings(
-      fatalWarningsInCI := false, // Remove once mdocjs bumps to sjs-dom v2
+      tlFatalWarningsInCi := false,
       libraryDependencies ++= Seq(
         "org.http4s" %%% "http4s-circe" % http4sVersion,
-        "io.circe" %%% "circe-generic" % "0.15.0-M1"
+        "io.circe" %%% "circe-generic" % circeVersion
       )
     )
     .enablePlugins(ScalaJSPlugin)
@@ -178,81 +172,35 @@ import laika.theme.config.Color
 
 Global / excludeLintKeys += laikaDescribe
 
-lazy val docs =
-  project
-    .in(file("mdocs"))
-    .settings(
-      fatalWarningsInCI := false,
-      mdocJS := Some(jsdocs),
-      mdocVariables ++= Map(
-        "js-opt" -> "fast",
-        "HTTP4S_VERSION" -> http4sVersion,
-        "CIRCE_VERSION" -> circeVersion
-      ),
-      Laika / sourceDirectories := Seq(mdocOut.value),
-      laikaDescribe := "<disabled>",
-      laikaConfig ~= { _.withRawContent },
-      laikaExtensions ++= Seq(
-        laika.markdown.github.GitHubFlavor,
-        laika.parse.code.SyntaxHighlighting
-      ),
-      laikaTheme := Helium
-        .defaults
-        .all
-        .metadata(
-          language = Some("en"),
-          title = Some("http4s-dom")
-        )
-        .site
-        .autoLinkJS() // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
-        .site
-        .layout(
-          contentWidth = px(860),
-          navigationWidth = px(275),
-          topBarHeight = px(35),
-          defaultBlockSpacing = px(10),
-          defaultLineHeight = 1.5,
-          anchorPlacement = laika.helium.config.AnchorPlacement.Right
-        )
-        .site
-        .themeColors(
-          primary = Color.hex("5B7980"),
-          secondary = Color.hex("cc6600"),
-          primaryMedium = Color.hex("a7d4de"),
-          primaryLight = Color.hex("e9f1f2"),
-          text = Color.hex("5f5f5f"),
-          background = Color.hex("ffffff"),
-          bgGradient =
-            (Color.hex("334044"), Color.hex("5B7980")) // only used for landing page background
-        )
-        .site
-        .favIcons(
-          Favicon
-            .external("https://http4s.org/images/http4s-favicon.svg", "32x32", "image/svg+xml")
-            .copy(sizes = None),
-          Favicon.external("https://http4s.org/images/http4s-favicon.png", "32x32", "image/png")
-        )
-        .site
-        .darkMode
-        .disabled
-        .site
-        .topNavigationBar(
-          homeLink = ImageLink.external(
-            "https://http4s.org",
-            Image.external("https://http4s.org/v1.0/images/http4s-logo-text-dark-2.svg")),
-          navLinks = Seq(
-            IconLink.external(
-              "https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/index.html",
-              HeliumIcon.api,
-              options = Styles("svg-link")),
-            IconLink.external(
-              "https://github.com/http4s/http4s-dom",
-              HeliumIcon.github,
-              options = Styles("svg-link")),
-            IconLink.external("https://discord.gg/XF3CXcMzqD", HeliumIcon.chat),
-            IconLink.external("https://twitter.com/http4s", HeliumIcon.twitter)
-          )
-        )
-        .build
-    )
-    .enablePlugins(MdocPlugin, LaikaPlugin)
+lazy val docs = project
+  .in(file("site"))
+  .settings(
+    libraryDependencies += "org.scala-js" %% "scalajs-linker" % scalaJSVersion,
+    libraryDependencies += {
+      scalaBinaryVersion.value match {
+        // keep these pinned to mdoc.js Scala versions
+        // scala-steward:off
+        case "2.12" =>
+          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
+            CrossVersion.constant("2.12.15"))
+        case "2.13" | "3" =>
+          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
+            CrossVersion.constant("2.13.6"))
+        // scala-steward:on
+      }
+    },
+    tlFatalWarningsInCi := false,
+    mdocJS := Some(jsdocs),
+    mdocVariables ++= Map(
+      "js-opt" -> "fast",
+      "HTTP4S_VERSION" -> http4sVersion,
+      "CIRCE_VERSION" -> circeVersion
+    ),
+    laikaDescribe := "<disabled>",
+    laikaConfig ~= { _.withRawContent },
+    tlSiteHeliumConfig ~= {
+      // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
+      _.site.autoLinkJS()
+    }
+  )
+  .enablePlugins(Http4sOrgSitePlugin)
