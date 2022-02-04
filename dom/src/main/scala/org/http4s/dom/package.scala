@@ -54,7 +54,7 @@ package object dom {
       Response[F](
         status = status,
         headers = fromDomHeaders(response.headers),
-        body = fromReadableStream(response.body)
+        entity = Entity(fromReadableStream(response.body), None)
       )
     }
 
