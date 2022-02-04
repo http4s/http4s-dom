@@ -27,7 +27,6 @@ import cats.effect.std.Supervisor
 import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import fs2.Chunk
-import fs2.Stream
 import org.scalajs.dom.Fetch
 import org.scalajs.dom.ResponseInit
 import org.scalajs.dom.FetchEvent
@@ -78,14 +77,18 @@ object ServiceWorker {
         method <- OptionF.fromEither(Method.fromString(req.method.toString))
         uri <- OptionF.fromEither(Uri.fromString(req.url))
         headers = fromDomHeaders(req.headers)
-        body = Stream
-          .evalUnChunk(F.fromPromise(F.delay(req.arrayBuffer())).map(Chunk.jsArrayBuffer))
-          .covary[F]
-        request = Request(method, uri, headers = headers, body = body)
+        body <- OptionT.liftF(F.fromPromise(F.delay(req.arrayBuffer())))
+        chunk = Chunk.jsArrayBuffer(body)
+        request = Request[F](method, uri, headers = headers, entity = Entity.Strict(chunk))
           .withAttribute(key, FetchEventContext(event, supervisor))
         response <- routes(request)
         body <- OptionT.liftF(
-          response.body.chunkAll.filter(_.nonEmpty).map(_.toJSArrayBuffer).compile.last
+          response.entity match {
+            case Entity.Empty => None.pure
+            case Entity.Strict(chunk) => Some(chunk.toUint8Array).pure
+            case default =>
+              default.body.chunkAll.filter(_.nonEmpty).map(_.toUint8Array).compile.last
+          }
         )
       } yield new DomResponse(
         body.getOrElse(null),

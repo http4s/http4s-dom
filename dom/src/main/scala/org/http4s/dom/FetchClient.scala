@@ -40,7 +40,13 @@ private[dom] object FetchClient {
       requestTimeout: Duration,
       options: FetchOptions
   )(implicit F: Async[F]): Client[F] = Client[F] { (req: Request[F]) =>
-    Resource.eval(req.body.chunkAll.filter(_.nonEmpty).compile.last).flatMap { body =>
+    Resource.eval {
+      req.entity match {
+        case Entity.Empty => None.pure
+        case Entity.Strict(chunk) => Some(chunk).pure
+        case default => default.body.chunkAll.filter(_.nonEmpty).compile.last
+      }
+    } flatMap { body =>
       Resource
         .makeCaseFull { (poll: Poll[F]) =>
           F.delay(new AbortController()).flatMap { abortController =>
@@ -51,7 +57,7 @@ private[dom] object FetchClient {
 
             init.method = req.method.name.asInstanceOf[HttpMethod]
             init.headers = new Headers(toDomHeaders(req.headers))
-            body.foreach { body => init.body = body.toJSArrayBuffer }
+            body.foreach { body => init.body = body.toUint8Array }
             init.signal = abortController.signal
             mergedOptions.cache.foreach(init.cache = _)
             mergedOptions.credentials.foreach(init.credentials = _)
