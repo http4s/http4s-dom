@@ -32,7 +32,7 @@ object TestRoutes {
       }
 
       val post = Some(request).filter(_.method == Method.POST).map { r =>
-        F.delay(Response(body = r.body))
+        F.delay(Response(entity = r.entity))
       }
 
       get.orElse(post).getOrElse(F.delay(Response[F](NotFound)))
