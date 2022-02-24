@@ -23,6 +23,8 @@ import JSEnv._
 
 name := "http4s-dom"
 
+ThisBuild / resolvers += Resolver.sonatypeRepo("snapshots")
+
 ThisBuild / tlBaseVersion := "1.0"
 ThisBuild / developers := List(
   tlGitHubDev("armanbilge", "Arman Bilge")
@@ -175,20 +177,6 @@ Global / excludeLintKeys += laikaDescribe
 lazy val docs = project
   .in(file("site"))
   .settings(
-    libraryDependencies += "org.scala-js" %% "scalajs-linker" % scalaJSVersion,
-    libraryDependencies += {
-      scalaBinaryVersion.value match {
-        // keep these pinned to mdoc.js Scala versions
-        // scala-steward:off
-        case "2.12" =>
-          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
-            CrossVersion.constant("2.12.15"))
-        case "2.13" | "3" =>
-          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
-            CrossVersion.constant("2.13.6"))
-        // scala-steward:on
-      }
-    },
     tlFatalWarningsInCi := false,
     mdocJS := Some(jsdocs),
     mdocVariables ++= Map(
