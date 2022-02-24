@@ -37,7 +37,7 @@ ThisBuild / githubWorkflowTargetBranches := Seq("main")
 ThisBuild / tlCiReleaseBranches := Seq("main")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-ThisBuild / crossScalaVersions := Seq("3.1.1", "2.13.8")
+ThisBuild / crossScalaVersions := Seq("2.13.8", "3.1.1")
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
 ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
