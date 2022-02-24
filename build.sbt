@@ -155,40 +155,9 @@ lazy val jsdocs =
     )
     .enablePlugins(ScalaJSPlugin)
 
-import laika.ast.Path.Root
-import laika.ast._
-import laika.ast.LengthUnit._
-import laika.helium.Helium
-import laika.helium.config.{
-  Favicon,
-  HeliumIcon,
-  IconLink,
-  ImageLink,
-  ReleaseInfo,
-  Teaser,
-  TextLink
-}
-import laika.theme.config.Color
-
-Global / excludeLintKeys += laikaDescribe
-
 lazy val docs = project
   .in(file("site"))
   .settings(
-    libraryDependencies += "org.scala-js" %% "scalajs-linker" % scalaJSVersion,
-    libraryDependencies += {
-      scalaBinaryVersion.value match {
-        // keep these pinned to mdoc.js Scala versions
-        // scala-steward:off
-        case "2.12" =>
-          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
-            CrossVersion.constant("2.12.15"))
-        case "2.13" | "3" =>
-          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
-            CrossVersion.constant("2.13.6"))
-        // scala-steward:on
-      }
-    },
     tlFatalWarningsInCi := false,
     mdocJS := Some(jsdocs),
     mdocVariables ++= Map(
@@ -196,7 +165,6 @@ lazy val docs = project
       "HTTP4S_VERSION" -> http4sVersion,
       "CIRCE_VERSION" -> circeVersion
     ),
-    laikaDescribe := "<disabled>",
     laikaConfig ~= { _.withRawContent },
     tlSiteHeliumConfig ~= {
       // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
