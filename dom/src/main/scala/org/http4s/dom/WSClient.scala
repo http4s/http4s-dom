@@ -26,9 +26,6 @@ import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.INothing
 import org.http4s.Method
-import org.http4s.client.websocket.WSDataFrame
-import org.http4s.client.websocket.WSFrame
-import org.http4s.client.websocket.WSRequest
 import org.scalajs.dom.CloseEvent
 import org.scalajs.dom.MessageEvent
 import org.scalajs.dom.WebSocket
