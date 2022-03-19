@@ -19,17 +19,16 @@ The [`WSClient`](https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/late
     <h3>Received</h3>
     <div id="received" style="width: 100%"/>
   </div>
-</div> 
+</div>
 ---
 import cats.effect._
 import cats.effect.unsafe.implicits._
 import fs2._
-import org.http4s.client.websocket._
 import org.http4s.dom._
 import org.http4s.syntax.all._
 import org.scalajs.dom._
 
-val message = document.getElementById("message").asInstanceOf[html.InputElement]
+val message = document.getElementById("message").asInstanceOf[html.Input]
 val button = document.getElementById("button").asInstanceOf[html.Button]
 val sent = document.getElementById("sent").asInstanceOf[html.Element]
 val received = document.getElementById("received").asInstanceOf[html.Element]
@@ -58,7 +57,7 @@ WSClient[IO].connectHighLevel(request).use { conn =>
       .drain
 
   val logCloseFrame: IO[Unit] =
-    conn.closeFrame.flatMap(frame => log(received, frame.toString))
+    conn.closeFrame.get.flatMap(frame => log(received, frame.toString))
 
   val registerOnClick = IO(button.onclick = _ => sendMessage.unsafeRunAndForget())
   val deregisterOnClick = IO(button.onclick = null)
