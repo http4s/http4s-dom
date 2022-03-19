@@ -35,7 +35,7 @@ ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.0", "2.13.8")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.1", "2.13.8")
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
 ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
@@ -109,8 +109,8 @@ ThisBuild / Test / jsEnv := {
   }
 }
 
-val catsEffectVersion = "3.3.5"
-val fs2Version = "3.2.4"
+val catsEffectVersion = "3.3.7"
+val fs2Version = "3.2.5"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.1.0"
 val circeVersion = "0.15.0-M1"
@@ -164,20 +164,6 @@ lazy val jsdocs =
 lazy val docs = project
   .in(file("site"))
   .settings(
-    libraryDependencies += "org.scala-js" %% "scalajs-linker" % scalaJSVersion,
-    libraryDependencies += {
-      scalaBinaryVersion.value match {
-        // keep these pinned to mdoc.js Scala versions
-        // scala-steward:off
-        case "2.12" =>
-          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
-            CrossVersion.constant("2.12.15"))
-        case "2.13" | "3" =>
-          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
-            CrossVersion.constant("2.13.6"))
-        // scala-steward:on
-      }
-    },
     tlFatalWarningsInCi := false,
     mdocJS := Some(jsdocs),
     mdocVariables ++= Map(
