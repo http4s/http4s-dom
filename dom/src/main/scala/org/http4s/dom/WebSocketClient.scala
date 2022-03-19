@@ -17,14 +17,17 @@
 package org.http4s.dom
 
 import cats.Foldable
+import cats.data.OptionT
 import cats.effect.kernel.Async
 import cats.effect.kernel.DeferredSource
 import cats.effect.kernel.Resource
 import cats.effect.std.Dispatcher
 import cats.effect.std.Queue
+import cats.effect.std.Semaphore
 import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.INothing
+import fs2.Stream
 import org.http4s.Method
 import org.http4s.client.websocket.WSClientHighLevel
 import org.http4s.client.websocket.WSConnectionHighLevel
@@ -51,7 +54,7 @@ object WebSocketClient {
       for {
         dispatcher <- Dispatcher[F]
         messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
-        drained <- F.deferred[Unit].toResource
+        semaphore <- Semaphore[F](1).toResource
         error <- F.deferred[Either[Throwable, INothing]].toResource
         close <- F.deferred[CloseEvent].toResource
         ws <- Resource.makeCase {
@@ -117,30 +120,29 @@ object WebSocketClient {
         def closeFrame: DeferredSource[F, WSFrame.Close] =
           (close: DeferredSource[F, CloseEvent]).map(e => WSFrame.Close(e.code, e.reason))
 
-        def receive: F[Option[WSDataFrame]] =
-          drained
-            .get
-            .race {
-              F.uncancelable { poll =>
-                // once we take, we must handle the frame
-                poll(messages.take).flatMap[Option[WSDataFrame]] {
-                  case None => drained.complete(()).as(none)
-                  case Some(e) =>
-                    e.data match {
-                      case s: String => WSFrame.Text(s).some.pure.widen
-                      case b: js.typedarray.ArrayBuffer =>
-                        WSFrame.Binary(ByteVector.fromJSArrayBuffer(b)).some.pure.widen
-                      case _ =>
-                        F.raiseError(
-                          new WebSocketException(s"Unsupported data: ${js.typeOf(e.data)}")
-                        )
-                    }
-                }
-              }
-            }
-            .map(_.toOption.flatten)
-            .race(error.get.rethrow)
-            .map(_.merge)
+        def receive: F[Option[WSDataFrame]] = semaphore
+          .permit
+          .use(_ => OptionT(messages.take).semiflatMap(decodeMessage).value)
+          .race(error.get.rethrow)
+          .map(_.merge)
+
+        override def receiveStream: Stream[F, WSDataFrame] =
+          Stream
+            .resource(semaphore.permit)
+            .flatMap(_ => Stream.fromQueueNoneTerminated(messages))
+            .evalMap(decodeMessage)
+            .concurrently(Stream.exec(error.get.rethrow.widen))
+
+        private def decodeMessage(e: MessageEvent): F[WSDataFrame] =
+          e.data match {
+            case s: String => WSFrame.Text(s).pure.widen[WSDataFrame]
+            case b: js.typedarray.ArrayBuffer =>
+              WSFrame.Binary(ByteVector.fromJSArrayBuffer(b)).pure.widen[WSDataFrame]
+            case _ =>
+              F.raiseError[WSDataFrame](
+                new WebSocketException(s"Unsupported data: ${js.typeOf(e.data)}")
+              )
+          }
 
         override def sendText(text: String): F[Unit] =
           errorOr(F.delay(ws.send(text)))
