@@ -138,22 +138,21 @@ object WebSocketClient {
             .map(_.merge)
 
         override def sendText(text: String): F[Unit] =
-          F.delay(ws.send(text))
+          errorOr(F.delay(ws.send(text)))
 
         override def sendBinary(bytes: ByteVector): F[Unit] =
-          F.delay(ws.send(bytes.toJSArrayBuffer))
+          errorOr(F.delay(ws.send(bytes.toJSArrayBuffer)))
 
-        def send(wsf: WSDataFrame): F[Unit] = errorOr {
+        def send(wsf: WSDataFrame): F[Unit] =
           wsf match {
             case WSFrame.Text(data, true) => sendText(data)
             case WSFrame.Binary(data, true) => sendBinary(data)
             case _ =>
               F.raiseError(new IllegalArgumentException("DataFrames cannot be fragmented"))
           }
-        }
 
         private def errorOr(fu: F[Unit]): F[Unit] = error.tryGet.flatMap {
-          case Some(error) => F.rethrow[Unit, Throwable](error.pure.widen)
+          case Some(error) => F.fromEither[Unit](error)
           case None => fu
         }
 
