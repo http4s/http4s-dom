@@ -13,11 +13,11 @@ The [`WSClient`](https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/late
 <div style="display: flex">
   <div style="flex: 50%">
     <h3>Sent</h3>
-    <div id="sent" style="width: 100%"/>
+    <div id="sent" style="width: 100%"></div>
   </div>
   <div style="flex: 50%">
     <h3>Received</h3>
-    <div id="received" style="width: 100%"/>
+    <div id="received" style="width: 100%"></div>
   </div>
 </div>
 ---
@@ -33,8 +33,8 @@ val button = document.getElementById("button").asInstanceOf[html.Button]
 val sent = document.getElementById("sent").asInstanceOf[html.Element]
 val received = document.getElementById("received").asInstanceOf[html.Element]
 
-val request = WSRequest(uri"ws://echo.websocket.events")
-WSClient[IO].connectHighLevel(request).use { conn =>
+val request = WSRequest(uri"wss://ws.postman-echo.com/raw")
+val app = WSClient[IO].connectHighLevel(request).use { conn =>
 
   def log(e: html.Element, text: String): IO[Unit] =
     IO {
@@ -64,4 +64,6 @@ WSClient[IO].connectHighLevel(request).use { conn =>
 
   registerOnClick *> receiveMessages *> logCloseFrame *> deregisterOnClick
 }
+
+app.unsafeRunAndForget()
 ```
