@@ -120,19 +120,24 @@ object WebSocketClient {
         def receive: F[Option[WSDataFrame]] =
           drained
             .get
-            .race(messages.take.flatMap[Option[WSDataFrame]] {
-              case None => drained.complete(()).as(none)
-              case Some(e) =>
-                e.data match {
-                  case s: String => WSFrame.Text(s).some.pure.widen
-                  case b: js.typedarray.ArrayBuffer =>
-                    WSFrame.Binary(ByteVector.fromJSArrayBuffer(b)).some.pure.widen
-                  case _ =>
-                    F.raiseError(
-                      new WebSocketException(s"Unsupported data: ${js.typeOf(e.data)}")
-                    )
+            .race {
+              F.uncancelable { poll =>
+                // once we take, we must handle the frame
+                poll(messages.take).flatMap[Option[WSDataFrame]] {
+                  case None => drained.complete(()).as(none)
+                  case Some(e) =>
+                    e.data match {
+                      case s: String => WSFrame.Text(s).some.pure.widen
+                      case b: js.typedarray.ArrayBuffer =>
+                        WSFrame.Binary(ByteVector.fromJSArrayBuffer(b)).some.pure.widen
+                      case _ =>
+                        F.raiseError(
+                          new WebSocketException(s"Unsupported data: ${js.typeOf(e.data)}")
+                        )
+                    }
                 }
-            })
+              }
+            }
             .map(_.toOption.flatten)
             .race(error.get.rethrow)
             .map(_.merge)
