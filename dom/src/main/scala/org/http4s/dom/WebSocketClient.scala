@@ -26,6 +26,11 @@ import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.INothing
 import org.http4s.Method
+import org.http4s.client.websocket.WSClientHighLevel
+import org.http4s.client.websocket.WSConnectionHighLevel
+import org.http4s.client.websocket.WSDataFrame
+import org.http4s.client.websocket.WSFrame
+import org.http4s.client.websocket.WSRequest
 import org.scalajs.dom.CloseEvent
 import org.scalajs.dom.MessageEvent
 import org.scalajs.dom.WebSocket
@@ -35,14 +40,14 @@ import scodec.bits.ByteVector
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
-final class WSException private[dom] (
+final class WebSocketException private[dom] (
     private[dom] val reason: String
 ) extends RuntimeException(reason)
 
-object WSClient {
+object WebSocketClient {
 
-  def apply[F[_]](implicit F: Async[F]): WSClient[F] = new WSClient[F] {
-    def connectHighLevel(request: WSRequest): Resource[F, WSConnection[F]] =
+  def apply[F[_]](implicit F: Async[F]): WSClientHighLevel[F] = new WSClientHighLevel[F] {
+    def connectHighLevel(request: WSRequest): Resource[F, WSConnectionHighLevel[F]] =
       for {
         dispatcher <- Dispatcher[F]
         messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
@@ -79,7 +84,7 @@ object WSClient {
             val reason = exitCase match {
               case Resource.ExitCase.Succeeded =>
                 None
-              case Resource.ExitCase.Errored(ex: WSException) =>
+              case Resource.ExitCase.Errored(ex: WebSocketException) =>
                 Some(ex.reason)
               case Resource.ExitCase.Errored(ex) =>
                 val reason = ex.toString
@@ -107,7 +112,7 @@ object WSClient {
 
             close.tryGet.map(_.isEmpty).ifM(shutdown, F.unit)
         }
-      } yield new WSConnection[F] {
+      } yield new WSConnectionHighLevel[F] {
 
         def closeFrame: DeferredSource[F, WSFrame.Close] =
           (close: DeferredSource[F, CloseEvent]).map(e => WSFrame.Close(e.code, e.reason))
@@ -124,7 +129,7 @@ object WSClient {
                     WSFrame.Binary(ByteVector.fromJSArrayBuffer(b)).some.pure.widen
                   case _ =>
                     F.raiseError(
-                      new WSException(s"Unsupported data: ${js.typeOf(e.data)}")
+                      new WebSocketException(s"Unsupported data: ${js.typeOf(e.data)}")
                     )
                 }
             })
