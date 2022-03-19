@@ -65,7 +65,8 @@ object WebSocketClient {
             val protocols = request
               .headers
               .get(ci"Sec-WebSocket-Protocol")
-              .fold(List.empty[String])(_.toList.map(_.value))
+              .toList
+              .flatMap(_.toList.map(_.value))
 
             val ws = new WebSocket(request.uri.renderString, protocols.toJSArray)
             ws.binaryType = "arraybuffer" // the default is blob
