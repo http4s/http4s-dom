@@ -137,10 +137,16 @@ object WebSocketClient {
             .race(error.get.rethrow)
             .map(_.merge)
 
+        override def sendText(text: String): F[Unit] =
+          F.delay(ws.send(text))
+
+        override def sendBinary(bytes: ByteVector): F[Unit] =
+          F.delay(ws.send(bytes.toJSArrayBuffer))
+
         def send(wsf: WSDataFrame): F[Unit] = errorOr {
           wsf match {
-            case WSFrame.Text(data, true) => F.delay(ws.send(data))
-            case WSFrame.Binary(data, true) => F.delay(ws.send(data.toJSArrayBuffer))
+            case WSFrame.Text(data, true) => sendText(data)
+            case WSFrame.Binary(data, true) => sendBinary(data)
             case _ =>
               F.raiseError(new IllegalArgumentException("DataFrames cannot be fragmented"))
           }
