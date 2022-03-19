@@ -19,8 +19,6 @@ package org.http4s.dom
 import cats.effect.IO
 import munit.CatsEffectSuite
 import org.http4s.Uri
-import org.http4s.client.websocket.WSFrame
-import org.http4s.client.websocket.WSRequest
 import org.http4s.dom.BuildInfo.fileServicePort
 import scodec.bits.ByteVector
 
