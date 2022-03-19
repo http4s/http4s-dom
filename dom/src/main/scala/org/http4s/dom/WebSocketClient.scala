@@ -104,8 +104,7 @@ object WebSocketClient {
 
             val shutdown = F
               .async_[CloseEvent] { cb =>
-                if (ws.readyState == 3) // already closed
-                  ws.onerror = e => cb(Left(js.JavaScriptException(e)))
+                ws.onerror = e => cb(Left(js.JavaScriptException(e)))
                 ws.onclose = e => cb(Right(e))
                 reason match { // 1000 "normal closure" is only code supported in browser
                   case Some(reason) => ws.close(1000, reason)
