@@ -53,29 +53,35 @@ Global / fileServicePort := {
   import cats.data.Kleisli
   import cats.effect.IO
   import cats.effect.unsafe.implicits.global
-  import com.comcast.ip4s.Port
-  import org.http4s.ember.server.EmberServerBuilder
+  import org.http4s._
+  import org.http4s.dsl.io._
+  import org.http4s.blaze.server.BlazeServerBuilder
   import org.http4s.server.staticcontent._
+  import java.net.InetSocketAddress
 
   (for {
     deferredPort <- IO.deferred[Int]
-    _ <- EmberServerBuilder
-      .default[IO]
-      .withPort(Port.fromInt(0).get)
-      .withHttpApp {
-        Kleisli { req =>
-          fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
-            // TODO find out why mime type is not auto-inferred
-            if (req.uri.renderString.endsWith(".js"))
-              res.withHeaders(
-                "Service-Worker-Allowed" -> "/",
-                "Content-Type" -> "text/javascript"
-              )
-            else res
+    _ <- BlazeServerBuilder[IO]
+      .bindSocketAddress(new InetSocketAddress("localhost", 0))
+      .withHttpWebSocketApp { wsb =>
+        HttpRoutes
+          .of[IO] {
+            case Method.GET -> Root / "ws" =>
+              wsb.build(identity)
+            case req =>
+              fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
+                // TODO find out why mime type is not auto-inferred
+                if (req.uri.renderString.endsWith(".js"))
+                  res.withHeaders(
+                    "Service-Worker-Allowed" -> "/",
+                    "Content-Type" -> "text/javascript"
+                  )
+                else res
+              }
           }
-        }
+          .orNotFound
       }
-      .build
+      .resource
       .map(_.address.getPort)
       .evalTap(deferredPort.complete(_))
       .useForever
@@ -133,7 +139,7 @@ lazy val tests = project
   .settings(
     scalaJSUseMainModuleInitializer := true,
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
-    buildInfoKeys := Seq[BuildInfoKey](scalaVersion),
+    buildInfoKeys := Seq[BuildInfoKey](scalaVersion, fileServicePort),
     buildInfoPackage := "org.http4s.dom",
     libraryDependencies ++= Seq(
       "org.scalameta" %%% "munit" % munitVersion % Test,
