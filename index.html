@@ -71,6 +71,10 @@
       </div>
       
       <ul class="nav-list">
+        <li class="level1 active"><a href="#">http4s-dom</a></li>
+        <li class="level1"><a href="fetch.html">Fetch Client</a></li>
+        <li class="level1"><a href="websocket.html">WebSocket Client</a></li>
+        <li class="level1"><a href="serviceworker.html">Service Worker &quot;Server&quot;</a></li>
       </ul>
       
       <ul class="nav-list">
@@ -99,8 +103,6 @@
         
         <ul class="nav-list">
           <li class="level1"><a href="#installation">Installation</a></li>
-          <li class="level1"><a href="#example">Example</a></li>
-          <li class="level1"><a href="#learn-more">Learn more</a></li>
         </ul>
         
         <p class="footer"></p>
@@ -112,8 +114,9 @@
         <p>Use http4s in your browser with Scala.js!
         Features:</p>
         <ul>
-          <li>A <a href="https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/FetchClientBuilder.html"><code>Client</code> implementation</a> backed by <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API"><code>fetch</code></a></li>
-          <li>A <a href="https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/ServiceWorker$.html"><code>Service Worker</code> integration</a> to install your <code>HttpRoutes</code> as a <a href="https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/onfetch"><code>FetchEvent</code> handler</a></li>
+          <li>A <a href="fetch.html"><code>Client</code> implementation</a> backed by <a href="https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API"><code>fetch</code></a></li>
+          <li>A <a href="websocket.html"><code>WSClient</code> implementation</a> backed by <a href="https://developer.mozilla.org/en-US/docs/Web/API/WebSocket$.html"><code>WebSocket</code></a></li>
+          <li>A <a href="serviceworker.html"><code>Service Worker</code> integration</a> to install your <code>HttpRoutes</code> as a <a href="https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/onfetch"><code>FetchEvent</code> handler</a></li>
           <li>Encoders for <a href="https://developer.mozilla.org/en-US/docs/Web/API/File"><code>File</code></a>, <a href="https://developer.mozilla.org/en-US/docs/Web/API/Blob"><code>Blob</code></a> and <a href="https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream"><code>ReadableStream</code></a></li>
         </ul>
         <p>Notably, http4s-dom can also be used to create <em>serverless</em> apps with <a href="https://workers.cloudflare.com">Cloudflare Workers</a> which have adopted the same APIs used in the browser!</p>
@@ -129,43 +132,6 @@
 </span><span class="comment">// optional, for JSON support
 </span><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;org.http4s&quot;</span><span> %%% </span><span class="string-literal">&quot;http4s-circe&quot;</span><span> % </span><span class="string-literal">&quot;0.23.11&quot;</span><span>
 </span><span class="identifier">libraryDependencies</span><span> += </span><span class="string-literal">&quot;io.circe&quot;</span><span> %%% </span><span class="string-literal">&quot;circe-generic&quot;</span><span> % </span><span class="string-literal">&quot;0.15.0-M1&quot;</span></code></pre>
-        
-        <h2 id="example" class="section">Example<a class="anchor-link right" href="#example"><i class="icofont-laika">&#xef71;</i></a></h2>
-        <pre><code class="nohighlight"><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">cats</span><span>.</span><span class="identifier">effect</span><span>.</span><span class="identifier">unsafe</span><span>.</span><span class="identifier">implicits</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">io</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="identifier">generic</span><span>.</span><span class="identifier">auto</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">http4s</span><span>.</span><span class="identifier">circe</span><span>.</span><span class="type-name">CirceEntityCodec</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">http4s</span><span>.</span><span class="identifier">dom</span><span>.</span><span class="identifier">_</span><span>
-</span><span class="keyword">import</span><span> </span><span class="identifier">org</span><span>.</span><span class="identifier">scalajs</span><span>.</span><span class="identifier">dom</span><span>.</span><span class="identifier">_</span><span>
-
-</span><span class="keyword">val</span><span> </span><span class="identifier">client</span><span> = </span><span class="type-name">FetchClientBuilder</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">create</span><span>
-
-</span><span class="keyword">val</span><span> </span><span class="identifier">activityElement</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;activity&quot;</span><span>)
-
-</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Activity</span><span>(</span><span class="identifier">activity</span><span>: </span><span class="type-name">String</span><span>)
-
-</span><span class="keyword">val</span><span> </span><span class="identifier">fetchActivity</span><span>: </span><span class="type-name">IO</span><span>[</span><span class="type-name">Unit</span><span>] = </span><span class="keyword">for</span><span> {
-  </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">IO</span><span>(</span><span class="identifier">activityElement</span><span>.</span><span class="identifier">innerHTML</span><span> = </span><span class="string-literal">&quot;&lt;i&gt;fetching...&lt;/i&gt;&quot;</span><span>)
-  </span><span class="identifier">activity</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">expect</span><span>[</span><span class="type-name">Activity</span><span>](</span><span class="string-literal">&quot;https://www.boredapi.com/api/activity&quot;</span><span>)
-  </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">IO</span><span>(</span><span class="identifier">activityElement</span><span>.</span><span class="identifier">innerHTML</span><span> = </span><span class="identifier">activity</span><span>.</span><span class="identifier">activity</span><span>)
-} </span><span class="keyword">yield</span><span> ()
-
-</span><span class="keyword">val</span><span> </span><span class="identifier">button</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;button&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="identifier">html</span><span>.</span><span class="type-name">Button</span><span>]
-
-</span><span class="identifier">button</span><span>.</span><span class="identifier">onclick</span><span> = </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">fetchActivity</span><span>.</span><span class="identifier">unsafeRunAndForget</span><span>()</span></code></pre>
-        <div id="mdoc-html-run0" data-mdoc-js><div style="text-align:center">
-          <h3 style="padding:10px">
-            I&#39;m bored.
-          </h3>
-          <button id="button">Fetch Activity</button>
-          <p style="padding:10px" id="activity"></p>
-        </div></div>
-        
-        <h2 id="learn-more" class="section">Learn more<a class="anchor-link right" href="#learn-more"><i class="icofont-laika">&#xef71;</i></a></h2>
-        <p>The <a href="https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/FetchClientBuilder.html"><code>FetchClientBuilder</code></a> creates a standard http4s <a href="https://http4s.org/v0.23/api/org/http4s/client/client"><code>Client</code></a> that is described in the <a href="https://http4s.org/v0.23/client/">http4s documentation</a>.
-        Similarly, the <a href="https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/ServiceWorker$.html"><code>ServiceWorker</code></a> <code>FetchEvent</code> listener integrates directly with <a href="https://http4s.org/v0.23/service/">http4s services</a>.
-        <script type="text/javascript" src="README.md.js" defer></script>
-        <script type="text/javascript" src="mdoc.js" defer></script></p>
 
         <hr style="margin-top: 30px"/>
         <footer style="font-size: 90%; text-align: center">
