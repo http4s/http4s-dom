@@ -32,14 +32,6 @@ import scala.scalajs.js.typedarray.Uint8Array
 
 package object dom {
 
-  type WSClient[F[_]] = client.websocket.WSClientHighLevel[F]
-  type WSConnection[F[_]] = client.websocket.WSConnectionHighLevel[F]
-  type WSRequest = client.websocket.WSRequest
-  val WSRequest = client.websocket.WSRequest
-  type WSFrame = client.websocket.WSFrame
-  val WSFrame = client.websocket.WSFrame
-  type WSDataFrame = client.websocket.WSDataFrame
-
   implicit def fileEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, File] =
     blobEncoder.narrow
 
