@@ -16,6 +16,5 @@ Notably, http4s-dom can also be used to create _serverless_ apps with [Cloudflar
 [![http4s-dom Scala version support](https://index.scala-lang.org/http4s/http4s-dom/http4s-dom/latest.svg)](https://index.scala-lang.org/http4s/http4s-dom/http4s-dom)
 
 ```scala
-// Supports http4s 0.23.x
 libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.2.1"
 ```

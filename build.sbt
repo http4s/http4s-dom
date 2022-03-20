@@ -171,7 +171,22 @@ lazy val docs = project
       "HTTP4S_VERSION" -> http4sVersion,
       "CIRCE_VERSION" -> circeVersion
     ),
-    laikaConfig ~= { _.withRawContent },
+    laikaConfig := {
+      import laika.rewrite.link._
+      laikaConfig
+        .value
+        .withRawContent
+        .withConfigValue(LinkConfig(apiLinks = List(
+          ApiLinks(
+            baseUri =
+              s"https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/${mdocVariables.value("VERSION")}/",
+            packagePrefix = "org.http4s.dom"),
+          ApiLinks(
+            baseUri = s"https://www.javadoc.io/doc/org.http4s/http4s-docs_2.13/$http4sVersion/",
+            packagePrefix = "org.http4s"
+          )
+        )))
+    },
     tlSiteHeliumConfig ~= {
       // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
       _.site.autoLinkJS()
