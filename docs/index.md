@@ -1,7 +1,6 @@
 # http4s-dom
 
-Use http4s in your browser with Scala.js! Check out the [interactive examples](https://http4s.github.io/http4s-dom/) in the docs.
-
+Use http4s in your browser with Scala.js!
 Features:
 
 * A [`Client` implementation](fetch.md) backed by [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
@@ -11,11 +10,18 @@ Features:
 
 Notably, http4s-dom can also be used to create _serverless_ apps with [Cloudflare Workers](https://workers.cloudflare.com) which have adopted the same APIs used in the browser!
 
-### Usage
+## Installation
 
 [![http4s-dom Scala version support](https://index.scala-lang.org/http4s/http4s-dom/http4s-dom/latest.svg)](https://index.scala-lang.org/http4s/http4s-dom/http4s-dom)
 
 ```scala
-// Supports http4s 0.23.x
-libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.2.1"
+// Supports http4s 0.23.x and scala-js-dom 2.x
+libraryDependencies += "org.http4s" %%% "http4s-dom" % "@VERSION@"
+
+// recommended, brings in the latest client module
+libraryDependencies += "org.http4s" %%% "http4s-client" % "@HTTP4S_VERSION@"
+
+// optional, for JSON support
+libraryDependencies += "org.http4s" %%% "http4s-circe" % "@HTTP4S_VERSION@"
+libraryDependencies += "io.circe" %%% "circe-generic" % "@CIRCE_VERSION@"
 ```

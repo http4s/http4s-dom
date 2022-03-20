@@ -32,7 +32,7 @@ import org.scalajs.dom.window
 import scala.concurrent.duration._
 import scala.scalajs.js
 
-class DomSuite extends CatsEffectSuite {
+class FetchServiceWorkerSuite extends CatsEffectSuite {
 
   def scalaVersion = if (BuildInfo.scalaVersion.startsWith("2"))
     BuildInfo.scalaVersion.split("\\.").init.mkString(".")
