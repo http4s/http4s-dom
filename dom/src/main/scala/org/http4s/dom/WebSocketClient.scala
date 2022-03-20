@@ -43,10 +43,6 @@ import scodec.bits.ByteVector
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
-final class WebSocketException private[dom] (
-    private[dom] val reason: String
-) extends RuntimeException(reason)
-
 object WebSocketClient {
 
   def apply[F[_]](implicit F: Async[F]): WSClientHighLevel[F] = new WSClientHighLevel[F] {
@@ -88,8 +84,6 @@ object WebSocketClient {
             val reason = exitCase match {
               case Resource.ExitCase.Succeeded =>
                 None
-              case Resource.ExitCase.Errored(ex: WebSocketException) =>
-                Some(ex.reason)
               case Resource.ExitCase.Errored(ex) =>
                 val reason = ex.toString
                 // reason must be no longer than 123 bytes of UTF-8 text
@@ -127,7 +121,7 @@ object WebSocketClient {
 
         def receive: F[Option[WSDataFrame]] = semaphore
           .permit
-          .use(_ => OptionT(messages.take).semiflatMap(decodeMessage).value)
+          .surround(OptionT(messages.take).map(decodeMessage).value)
           .race(error.get.rethrow)
           .map(_.merge)
 
@@ -135,18 +129,16 @@ object WebSocketClient {
           Stream
             .resource(semaphore.permit)
             .flatMap(_ => Stream.fromQueueNoneTerminated(messages))
-            .evalMap(decodeMessage)
+            .map(decodeMessage)
             .concurrently(Stream.exec(error.get.rethrow.widen))
 
-        private def decodeMessage(e: MessageEvent): F[WSDataFrame] =
+        private def decodeMessage(e: MessageEvent): WSDataFrame =
           e.data match {
-            case s: String => WSFrame.Text(s).pure.widen[WSDataFrame]
+            case s: String => WSFrame.Text(s)
             case b: js.typedarray.ArrayBuffer =>
-              WSFrame.Binary(ByteVector.fromJSArrayBuffer(b)).pure.widen[WSDataFrame]
-            case _ =>
-              F.raiseError[WSDataFrame](
-                new WebSocketException(s"Unsupported data: ${js.typeOf(e.data)}")
-              )
+              WSFrame.Binary(ByteVector.fromJSArrayBuffer(b))
+            case _ => // this should never happen
+              throw new RuntimeException
           }
 
         override def sendText(text: String): F[Unit] =
