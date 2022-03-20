@@ -53,29 +53,35 @@ Global / fileServicePort := {
   import cats.data.Kleisli
   import cats.effect.IO
   import cats.effect.unsafe.implicits.global
-  import com.comcast.ip4s.Port
-  import org.http4s.ember.server.EmberServerBuilder
+  import org.http4s._
+  import org.http4s.dsl.io._
+  import org.http4s.blaze.server.BlazeServerBuilder
   import org.http4s.server.staticcontent._
+  import java.net.InetSocketAddress
 
   (for {
     deferredPort <- IO.deferred[Int]
-    _ <- EmberServerBuilder
-      .default[IO]
-      .withPort(Port.fromInt(0).get)
-      .withHttpApp {
-        Kleisli { req =>
-          fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
-            // TODO find out why mime type is not auto-inferred
-            if (req.uri.renderString.endsWith(".js"))
-              res.withHeaders(
-                "Service-Worker-Allowed" -> "/",
-                "Content-Type" -> "text/javascript"
-              )
-            else res
+    _ <- BlazeServerBuilder[IO]
+      .bindSocketAddress(new InetSocketAddress("localhost", 0))
+      .withHttpWebSocketApp { wsb =>
+        HttpRoutes
+          .of[IO] {
+            case Method.GET -> Root / "ws" =>
+              wsb.build(identity)
+            case req =>
+              fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
+                // TODO find out why mime type is not auto-inferred
+                if (req.uri.renderString.endsWith(".js"))
+                  res.withHeaders(
+                    "Service-Worker-Allowed" -> "/",
+                    "Content-Type" -> "text/javascript"
+                  )
+                else res
+              }
           }
-        }
+          .orNotFound
       }
-      .build
+      .resource
       .map(_.address.getPort)
       .evalTap(deferredPort.complete(_))
       .useForever
@@ -103,9 +109,9 @@ ThisBuild / Test / jsEnv := {
   }
 }
 
-val catsEffectVersion = "3.3.5"
-val fs2Version = "3.2.4"
-val http4sVersion = "1.0.0-M31"
+val catsEffectVersion = "3.3.8"
+val fs2Version = "3.2.5"
+val http4sVersion = "1.0.0-M32"
 val scalaJSDomVersion = "2.1.0"
 val circeVersion = "0.15.0-M1"
 val munitVersion = "0.7.29"
@@ -133,7 +139,7 @@ lazy val tests = project
   .settings(
     scalaJSUseMainModuleInitializer := true,
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
-    buildInfoKeys := Seq[BuildInfoKey](scalaVersion),
+    buildInfoKeys := Seq[BuildInfoKey](scalaVersion, fileServicePort),
     buildInfoPackage := "org.http4s.dom",
     libraryDependencies ++= Seq(
       "org.scalameta" %%% "munit" % munitVersion % Test,
@@ -155,40 +161,9 @@ lazy val jsdocs =
     )
     .enablePlugins(ScalaJSPlugin)
 
-import laika.ast.Path.Root
-import laika.ast._
-import laika.ast.LengthUnit._
-import laika.helium.Helium
-import laika.helium.config.{
-  Favicon,
-  HeliumIcon,
-  IconLink,
-  ImageLink,
-  ReleaseInfo,
-  Teaser,
-  TextLink
-}
-import laika.theme.config.Color
-
-Global / excludeLintKeys += laikaDescribe
-
 lazy val docs = project
   .in(file("site"))
   .settings(
-    libraryDependencies += "org.scala-js" %% "scalajs-linker" % scalaJSVersion,
-    libraryDependencies += {
-      scalaBinaryVersion.value match {
-        // keep these pinned to mdoc.js Scala versions
-        // scala-steward:off
-        case "2.12" =>
-          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
-            CrossVersion.constant("2.12.15"))
-        case "2.13" | "3" =>
-          ("org.scala-js" %% "scalajs-compiler" % scalaJSVersion).cross(
-            CrossVersion.constant("2.13.6"))
-        // scala-steward:on
-      }
-    },
     tlFatalWarningsInCi := false,
     mdocJS := Some(jsdocs),
     mdocVariables ++= Map(
@@ -196,7 +171,6 @@ lazy val docs = project
       "HTTP4S_VERSION" -> http4sVersion,
       "CIRCE_VERSION" -> circeVersion
     ),
-    laikaDescribe := "<disabled>",
     laikaConfig ~= { _.withRawContent },
     tlSiteHeliumConfig ~= {
       // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
