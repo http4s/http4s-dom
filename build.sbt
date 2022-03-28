@@ -28,8 +28,6 @@ ThisBuild / developers := List(
   tlGitHubDev("armanbilge", "Arman Bilge")
 )
 ThisBuild / startYear := Some(2021)
-ThisBuild / tlSiteApiUrl := Some(url(
-  "https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/index.html"))
 
 ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
@@ -164,6 +162,8 @@ lazy val jsdocs =
 lazy val docs = project
   .in(file("site"))
   .settings(
+    tlSiteApiModule := Some((dom / projectID).value),
+    tlSiteApiPackage := Some("org.http4s.dom"),
     tlFatalWarningsInCi := false,
     mdocJS := Some(jsdocs),
     mdocVariables ++= Map(
