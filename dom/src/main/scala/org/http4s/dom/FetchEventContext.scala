@@ -26,7 +26,7 @@ import cats.syntax.all._
 import org.scalajs.dom.FetchEvent
 import org.typelevel.vault.Key
 
-final class FetchEventContext[F[_]] private (
+case class FetchEventContext[F[_]] private (
     val clientId: String,
     val resultingClientId: String,
     val preloadResponse: F[Option[Response[F]]],

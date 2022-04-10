@@ -122,7 +122,7 @@ sealed abstract class FetchOptions extends Product with Serializable {
     )
 }
 
-object FetchOptions {
+final object FetchOptions {
   private[this] final case class FetchOptionsImpl(
       override final val cache: Option[RequestCache],
       override final val credentials: Option[RequestCredentials] = None,

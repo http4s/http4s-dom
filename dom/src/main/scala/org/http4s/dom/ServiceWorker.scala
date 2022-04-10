@@ -35,7 +35,7 @@ import org.scalajs.dom.ServiceWorkerGlobalScope
 import org.scalajs.dom.{Response => DomResponse}
 import org.typelevel.vault.Key
 
-object ServiceWorker {
+final object ServiceWorker {
 
   /**
    * Adds a listener for `FetchEvent`. The provided `IO` is run once to install the `routes`. If

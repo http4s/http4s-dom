@@ -43,7 +43,7 @@ import scodec.bits.ByteVector
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
-object WebSocketClient {
+final object WebSocketClient {
 
   def apply[F[_]](implicit F: Async[F]): WSClientHighLevel[F] = new WSClientHighLevel[F] {
     def connectHighLevel(request: WSRequest): Resource[F, WSConnectionHighLevel[F]] =

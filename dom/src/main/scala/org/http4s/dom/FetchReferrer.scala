@@ -31,7 +31,7 @@ import org.http4s.util.Writer
  * See https://fetch.spec.whatwg.org/#ref-for-dom-request-referrer%E2%91%A0
  */
 sealed abstract class FetchReferrer extends Renderable
-object FetchReferrer {
+final object FetchReferrer {
   case object NoReferrer extends FetchReferrer {
     override def render(writer: Writer): writer.type = writer << ""
   }

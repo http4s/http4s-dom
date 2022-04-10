@@ -90,6 +90,9 @@ jobs:
         if: matrix.java == 'temurin@8'
         run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' doc'
 
+      - if: marix.scala == 2.13.8
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' ''scalafixAll --check'''
+
       - name: Check unused compile dependencies
         if: matrix.java == 'temurin@8'
         run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' unusedCompileDependenciesTest'

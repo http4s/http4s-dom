@@ -29,11 +29,18 @@ ThisBuild / developers := List(
 )
 ThisBuild / startYear := Some(2021)
 
+ThisBuild / semanticdbEnabled := true
+ThisBuild / semanticdbVersion := scalafixSemanticdb.revision
+ThisBuild / scalafixResolvers +=
+  coursierapi.MavenRepository.of("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+ThisBuild / scalafixDependencies += "org.http4s" %% "http4s-scalafix-internal" % "0.23.11-253-889d945-SNAPSHOT"
+
 ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.1", "2.13.8")
+val scala3 = "3.1.1"
+ThisBuild / crossScalaVersions := Seq("2.12.15", scala3, "2.13.8")
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
 ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
@@ -42,6 +49,12 @@ ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
     scala <- (ThisBuild / crossScalaVersions).value.init
   } yield MatrixExclude(Map("scala" -> scala, "browser" -> "Firefox"))
 }
+
+ThisBuild / githubWorkflowBuild +=
+  WorkflowStep.Sbt(
+    List("scalafixAll --check"),
+    cond = Some(s"marix.scala != $scala3")
+  )
 
 lazy val useJSEnv = settingKey[JSEnv]("Browser for running Scala.js tests")
 Global / useJSEnv := Chrome
