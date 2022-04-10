@@ -53,7 +53,7 @@ ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
 ThisBuild / githubWorkflowBuild +=
   WorkflowStep.Sbt(
     List("scalafixAll --check"),
-    cond = Some(s"marix.scala != $scala3")
+    cond = Some(s"matrix.scala != $scala3")
   )
 
 lazy val useJSEnv = settingKey[JSEnv]("Browser for running Scala.js tests")
