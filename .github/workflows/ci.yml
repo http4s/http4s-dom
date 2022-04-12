@@ -29,13 +29,13 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.15, 3.1.1, 2.13.8]
+        scala: [2.12.15, 3.1.2, 2.13.8]
         java: [temurin@8]
         browser: [Chrome, Firefox]
         exclude:
           - scala: 2.12.15
             browser: Firefox
-          - scala: 3.1.1
+          - scala: 3.1.2
             browser: Firefox
     runs-on: ${{ matrix.os }}
     steps:
