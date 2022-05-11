@@ -135,7 +135,7 @@
   </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">IO</span><span>(</span><span class="identifier">activityElement</span><span>.</span><span class="identifier">innerHTML</span><span> = </span><span class="identifier">activity</span><span>.</span><span class="identifier">activity</span><span>)
 } </span><span class="keyword">yield</span><span> ()
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">button</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;button&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="identifier">html</span><span>.</span><span class="type-name">Button</span><span>]
+</span><span class="keyword">val</span><span> </span><span class="identifier">button</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;button&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="type-name">HTMLButtonElement</span><span>]
 
 </span><span class="identifier">button</span><span>.</span><span class="identifier">onclick</span><span> = </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">fetchActivity</span><span>.</span><span class="identifier">unsafeRunAndForget</span><span>()</span></code></pre>
         <div id="mdoc-html-run0" data-mdoc-js><div style="text-align:center">
