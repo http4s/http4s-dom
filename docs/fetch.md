@@ -32,7 +32,7 @@ val fetchActivity: IO[Unit] = for {
   _ <- IO(activityElement.innerHTML = activity.activity)
 } yield ()
 
-val button = document.getElementById("button").asInstanceOf[html.Button]
+val button = document.getElementById("button").asInstanceOf[HTMLButtonElement]
 
 button.onclick = _ => fetchActivity.unsafeRunAndForget()
 ```
