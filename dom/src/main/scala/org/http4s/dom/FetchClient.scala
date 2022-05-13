@@ -43,7 +43,7 @@ private[dom] object FetchClient {
     Resource.eval(req.body.chunkAll.filter(_.nonEmpty).compile.last).flatMap { body =>
       Resource
         .makeCaseFull { (poll: Poll[F]) =>
-          F.delay(new AbortController()).flatMap { abortController =>
+          F.delay(new AbortController).flatMap { abortController =>
             val requestOptions = req.attributes.lookup(FetchOptions.Key)
             val mergedOptions = requestOptions.fold(options)(options.merge)
 

@@ -97,11 +97,11 @@ ThisBuild / Test / jsEnv := {
 
   useJSEnv.value match {
     case Chrome =>
-      val options = new ChromeOptions()
+      val options = new ChromeOptions
       options.setHeadless(true)
       new SeleniumJSEnv(options, config)
     case Firefox =>
-      val options = new FirefoxOptions()
+      val options = new FirefoxOptions
       options.setHeadless(true)
       new SeleniumJSEnv(options, config)
   }
@@ -136,7 +136,7 @@ lazy val tests = project
   .in(file("tests"))
   .settings(
     scalaJSUseMainModuleInitializer := true,
-    (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
+    Test / test := (Test / test).dependsOn(Compile / fastOptJS).value,
     buildInfoKeys := Seq[BuildInfoKey](scalaVersion, fileServicePort),
     buildInfoPackage := "org.http4s.dom",
     libraryDependencies ++= Seq(
