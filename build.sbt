@@ -137,7 +137,17 @@ lazy val tests = project
   .settings(
     scalaJSUseMainModuleInitializer := true,
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
-    buildInfoKeys := Seq[BuildInfoKey](scalaVersion, fileServicePort),
+    buildInfoKeys := Seq[BuildInfoKey](
+      fileServicePort,
+      BuildInfoKey("runtime" -> useJSEnv.value.toString),
+      BuildInfoKey(
+        "workerDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory)
+          .value
+          .relativeTo((ThisBuild / baseDirectory).value)
+          .get
+          .toString
+      )
+    ),
     buildInfoPackage := "org.http4s.dom",
     libraryDependencies ++= Seq(
       "org.scalameta" %%% "munit" % munitVersion % Test,
