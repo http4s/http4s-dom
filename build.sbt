@@ -149,6 +149,7 @@ lazy val tests = project
         "outputDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory)
           .value
           .relativeTo((ThisBuild / baseDirectory).value)
+          .get
           .toString
       )
     ),
