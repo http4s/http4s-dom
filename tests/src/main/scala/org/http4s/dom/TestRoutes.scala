@@ -18,48 +18,19 @@ package org.http4s
 package dom
 
 import cats.effect._
-import cats.syntax.all._
-import fs2._
 import org.http4s.Status._
-
-import scala.concurrent.duration._
+import org.http4s.client.testkit.testroutes.GetRoutes
 
 object TestRoutes {
-  def apply[F[_]](implicit F: Async[F]): HttpRoutes[F] = HttpRoutes.of {
+  def routes: HttpRoutes[IO] = HttpRoutes.of {
     case request =>
       val get = Some(request).filter(_.method == Method.GET).flatMap { r =>
         GetRoutes.getPaths.get(r.uri.path.segments.last.toString)
       }
 
-      val post = Some(request).filter(_.method == Method.POST).map { r =>
-        F.delay(Response(body = r.body))
-      }
+      val post =
+        Some(request).filter(_.method == Method.POST).map { r => IO(Response(body = r.body)) }
 
-      get.orElse(post).getOrElse(F.delay(Response[F](NotFound)))
+      get.orElse(post).getOrElse(IO(Response[IO](NotFound)))
   }
-}
-
-object GetRoutes {
-  val SimplePath = "simple"
-  val ChunkedPath = "chunked"
-  val DelayedPath = "delayed"
-  val NoContentPath = "no-content"
-  val NotFoundPath = "not-found"
-  val EmptyNotFoundPath = "empty-not-found"
-  val InternalServerErrorPath = "internal-server-error"
-
-  def getPaths[F[_]](implicit F: Temporal[F]): Map[String, F[Response[F]]] =
-    Map(
-      SimplePath -> Response[F](Ok).withEntity("simple path").pure[F],
-      ChunkedPath -> Response[F](Ok)
-        .withEntity(Stream.emits("chunk".toSeq.map(_.toString)).covary[F])
-        .pure[F],
-      DelayedPath ->
-        F.sleep(1.second) *>
-        Response[F](Ok).withEntity("delayed path").pure[F],
-      NoContentPath -> Response[F](NoContent).pure[F],
-      NotFoundPath -> Response[F](NotFound).withEntity("not found").pure[F],
-      EmptyNotFoundPath -> Response[F](NotFound).pure[F],
-      InternalServerErrorPath -> Response[F](InternalServerError).pure[F]
-    )
 }

@@ -17,6 +17,7 @@
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import org.openqa.selenium.firefox.FirefoxOptions
+import org.scalajs.jsenv.nodejs.NodeJSEnv
 import org.scalajs.jsenv.selenium.SeleniumJSEnv
 
 import JSEnv._
@@ -96,6 +97,7 @@ ThisBuild / Test / jsEnv := {
       s"http://localhost:${fileServicePort.value}/target/selenium/")
 
   useJSEnv.value match {
+    case NodeJS => new NodeJSEnv()
     case Chrome =>
       val options = new ChromeOptions()
       options.setHeadless(true)
@@ -114,6 +116,9 @@ val scalaJSDomVersion = "2.2.0"
 val circeVersion = "0.15.0-M1"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
+
+ThisBuild / resolvers +=
+  "s01 snapshots".at("https://s01.oss.sonatype.org/content/repositories/snapshots/")
 
 lazy val root =
   project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
@@ -137,9 +142,15 @@ lazy val tests = project
   .settings(
     scalaJSUseMainModuleInitializer := true,
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
-    buildInfoKeys := Seq[BuildInfoKey](scalaVersion, fileServicePort),
+    buildInfoKeys := Seq[BuildInfoKey](
+      fileServicePort,
+      BuildInfoKey(
+        "outputDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory).value.toString),
+      BuildInfoKey("runtime" -> useJSEnv.value.toString)
+    ),
     buildInfoPackage := "org.http4s.dom",
     libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
       "org.scalameta" %%% "munit" % munitVersion % Test,
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
     )

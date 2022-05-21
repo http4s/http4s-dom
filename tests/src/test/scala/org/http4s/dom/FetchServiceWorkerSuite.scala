@@ -23,7 +23,8 @@ import fs2.Stream
 import munit.CatsEffectSuite
 import org.http4s.Method._
 import org.http4s.client.dsl.io._
-import org.http4s.multipart.Multipart
+import org.http4s.client.testkit.testroutes.GetRoutes
+import org.http4s.multipart.Multiparts
 import org.http4s.multipart.Part
 import org.http4s.syntax.all._
 import org.scalajs.dom.Event
@@ -33,11 +34,6 @@ import scala.concurrent.duration._
 import scala.scalajs.js
 
 class FetchServiceWorkerSuite extends CatsEffectSuite {
-
-  def scalaVersion = if (BuildInfo.scalaVersion.startsWith("2"))
-    BuildInfo.scalaVersion.split("\\.").init.mkString(".")
-  else
-    BuildInfo.scalaVersion
 
   val client = FetchClientBuilder[IO].create
 
@@ -50,7 +46,7 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
           .navigator
           .serviceWorker
           .register(
-            s"/tests/target/scala-${scalaVersion}/tests-fastopt/main.js",
+            s"${BuildInfo.outputDir}/main.js",
             js.Dynamic.literal(scope = "/")
           )
       }
@@ -93,14 +89,19 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
   }
 
   test("POST a multipart body") {
-    val multipart = Multipart[IO](Vector(Part.formData("text", "This is text.")))
-    client
-      .expect[String](POST(multipart, baseUrl / "echo").withHeaders(multipart.headers))
-      .map(_.contains("This is text."))
-      .assert
+    Multiparts.forSync[IO].flatMap { multiparts =>
+      multiparts
+        .multipart(Vector(Part.formData("text", "This is text.")))
+        .flatMap { multipart =>
+          client
+            .expect[String](POST(multipart, baseUrl / "echo").withHeaders(multipart.headers))
+            .map(_.contains("This is text."))
+            .assert
+        }
+    }
   }
 
-  GetRoutes.getPaths[IO].toList.foreach {
+  GetRoutes.getPaths.toList.foreach {
     case (path, expected) =>
       test(s"Execute GET $path") {
         client

@@ -1,4 +1,7 @@
-val http4sVersion = "0.23.11"
+val http4sVersion = "0.23.11-506-d570136-SNAPSHOT"
+
+ThisBuild / resolvers +=
+  "s01 snapshots".at("https://s01.oss.sonatype.org/content/repositories/snapshots/")
 
 enablePlugins(BuildInfoPlugin)
 buildInfoKeys += "http4sVersion" -> http4sVersion
