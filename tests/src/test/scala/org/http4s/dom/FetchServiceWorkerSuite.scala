@@ -34,11 +34,6 @@ import scala.scalajs.js
 
 class FetchServiceWorkerSuite extends CatsEffectSuite {
 
-  def scalaVersion = if (BuildInfo.scalaVersion.startsWith("2"))
-    BuildInfo.scalaVersion.split("\\.").init.mkString(".")
-  else
-    BuildInfo.scalaVersion
-
   val client = FetchClientBuilder[IO].create
 
   val baseUrl = uri"/"
@@ -50,7 +45,7 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
           .navigator
           .serviceWorker
           .register(
-            s"/tests/target/scala-${scalaVersion}/tests-fastopt/main.js",
+            s"/${BuildInfo.workerDir}/main.js",
             js.Dynamic.literal(scope = "/")
           )
       }
