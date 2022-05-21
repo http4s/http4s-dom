@@ -144,9 +144,13 @@ lazy val tests = project
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
     buildInfoKeys := Seq[BuildInfoKey](
       fileServicePort,
+      BuildInfoKey("runtime" -> useJSEnv.value.toString),
       BuildInfoKey(
-        "outputDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory).value.toString),
-      BuildInfoKey("runtime" -> useJSEnv.value.toString)
+        "outputDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory)
+          .value
+          .relativeTo((ThisBuild / baseDirectory).value)
+          .toString
+      )
     ),
     buildInfoPackage := "org.http4s.dom",
     libraryDependencies ++= Seq(
