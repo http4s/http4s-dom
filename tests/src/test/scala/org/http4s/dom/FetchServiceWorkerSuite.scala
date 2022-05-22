@@ -93,7 +93,7 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
       .expect[String](POST(multipart, baseUrl / "echo").withHeaders(multipart.headers))
       .map(_.contains("This is text."))
       .assert
-  }
+  }: @scala.annotation.nowarn
 
   GetRoutes.getPaths[IO].toList.foreach {
     case (path, expected) =>
