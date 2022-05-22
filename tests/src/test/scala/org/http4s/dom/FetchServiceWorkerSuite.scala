@@ -88,7 +88,7 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
   }
 
   test("POST a multipart body") {
-    val multipart = Multipart[IO](Vector(Part.formData("text", "This is text.")))
+    val multipart = Multipart[IO](Vector(Part.formData[IO]("text", "This is text.")))
     client
       .expect[String](POST(multipart, baseUrl / "echo").withHeaders(multipart.headers))
       .map(_.contains("This is text."))
