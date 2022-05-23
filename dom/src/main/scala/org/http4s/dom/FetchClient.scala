@@ -87,7 +87,6 @@ private[dom] object FetchClient {
           }
         } {
           case (r, exitCase) =>
-            // response.body can be null on Node.js e.g. for no-content responses
             OptionT.fromOption(Option(r.body)).foreachF(closeReadableStream(_, exitCase))
         }
         .evalMap(fromDomResponse[F])
