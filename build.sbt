@@ -17,6 +17,7 @@
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import org.openqa.selenium.firefox.FirefoxOptions
+import org.scalajs.jsenv.nodejs.NodeJSEnv
 import org.scalajs.jsenv.selenium.SeleniumJSEnv
 
 import JSEnv._
@@ -35,15 +36,26 @@ ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
 ThisBuild / crossScalaVersions := Seq("2.12.15", "3.1.2", "2.13.8")
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
-ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
-ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
+
+val jsEnvs = List("Chrome", "Firefox", "NodeJS")
+ThisBuild / githubWorkflowBuildMatrixAdditions += "jsenv" -> jsEnvs
+ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.jsenv }}"
 ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
   for {
     scala <- (ThisBuild / crossScalaVersions).value.init
-  } yield MatrixExclude(Map("scala" -> scala, "browser" -> "Firefox"))
+    jsenv <- jsEnvs.tail
+  } yield MatrixExclude(Map("scala" -> scala, "jsenv" -> jsenv))
 }
 
-lazy val useJSEnv = settingKey[JSEnv]("Browser for running Scala.js tests")
+ThisBuild / githubWorkflowBuildPreamble +=
+  WorkflowStep.Use(
+    UseRef.Public("actions", "setup-node", "v2"),
+    name = Some("Setup NodeJS v18 LTS"),
+    params = Map("node-version" -> "18"),
+    cond = Some("matrix.jsenv == 'NodeJS'")
+  )
+
+lazy val useJSEnv = settingKey[JSEnv]("JSEnv for running Scala.js tests")
 Global / useJSEnv := Chrome
 
 lazy val fileServicePort = settingKey[Int]("Port for static file server")
@@ -96,6 +108,7 @@ ThisBuild / Test / jsEnv := {
       s"http://localhost:${fileServicePort.value}/target/selenium/")
 
   useJSEnv.value match {
+    case NodeJS => new NodeJSEnv()
     case Chrome =>
       val options = new ChromeOptions()
       options.setHeadless(true)
@@ -116,7 +129,7 @@ val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
 
 lazy val root =
-  project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
+  project.in(file(".")).aggregate(dom, tests, nodeJSTests).enablePlugins(NoPublishPlugin)
 
 lazy val dom = project
   .in(file("dom"))
@@ -136,10 +149,14 @@ lazy val tests = project
   .in(file("tests"))
   .settings(
     scalaJSUseMainModuleInitializer := true,
-    (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
+    Test / test := {
+      if (useJSEnv.value != JSEnv.NodeJS)
+        (Test / test).dependsOn(Compile / fastOptJS).value
+      else
+        ()
+    },
     buildInfoKeys := Seq[BuildInfoKey](
       fileServicePort,
-      BuildInfoKey("runtime" -> useJSEnv.value.toString),
       BuildInfoKey(
         "workerDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory)
           .value
@@ -156,6 +173,25 @@ lazy val tests = project
   )
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
+
+lazy val nodeJSTests = project
+  .in(file("tests-nodejs"))
+  .settings(
+    Test / test := {
+      if (useJSEnv.value == JSEnv.NodeJS)
+        (Test / test).value
+      else
+        ()
+    },
+    libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
+      "org.scalameta" %%% "munit" % munitVersion % Test,
+      "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
+    ),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .dependsOn(dom)
+  .enablePlugins(ScalaJSPlugin, NoPublishPlugin)
 
 lazy val jsdocs =
   project
