@@ -174,6 +174,9 @@ lazy val tests = project
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
 
+ThisBuild / resolvers +=
+  "s01 snapshots".at("https://s01.oss.sonatype.org/content/repositories/snapshots/")
+
 lazy val nodeJSTests = project
   .in(file("tests-nodejs"))
   .settings(
@@ -184,7 +187,7 @@ lazy val nodeJSTests = project
         ()
     },
     libraryDependencies ++= Seq(
-      "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
+      "org.http4s" %%% "http4s-client-testkit" % "0.23.11-506-d570136-SNAPSHOT",
       "org.scalameta" %%% "munit" % munitVersion % Test,
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
     ),
