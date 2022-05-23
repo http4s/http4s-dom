@@ -28,7 +28,7 @@ object TestRoutes {
   def routes: HttpRoutes[IO] = HttpRoutes.of {
     case request =>
       val get = Some(request).filter(_.method == Method.GET).flatMap { r =>
-        testroutes.GetRoutes.getPaths.get(r.uri.path.segments.last.toString)
+        testroutes.GetRoutes.getPaths.get(s"/${r.uri.path.segments.last}")
       }
 
       val post =
