@@ -67,19 +67,15 @@ Global / fileServicePort := {
             case Method.GET -> Root / "ws" =>
               wsb.build(identity)
             case req =>
-              fileService[IO](FileService.Config(
-                (tests / Compile / fastLinkJS / scalaJSLinkerOutputDirectory).value.toString))
-                .orNotFound
-                .run(req)
-                .map { res =>
-                  // TODO find out why mime type is not auto-inferred
-                  if (req.uri.renderString.endsWith(".js"))
-                    res.withHeaders(
-                      "Service-Worker-Allowed" -> "/",
-                      "Content-Type" -> "text/javascript"
-                    )
-                  else res
-                }
+              fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
+                // TODO find out why mime type is not auto-inferred
+                if (req.uri.renderString.endsWith(".js"))
+                  res.withHeaders(
+                    "Service-Worker-Allowed" -> "/",
+                    "Content-Type" -> "text/javascript"
+                  )
+                else res
+              }
           }
           .orNotFound
       }
@@ -96,8 +92,8 @@ ThisBuild / Test / jsEnv := {
   val config = SeleniumJSEnv
     .Config()
     .withMaterializeInServer(
-      (tests / Compile / fastLinkJS / scalaJSLinkerOutputDirectory).value.toString,
-      s"http://localhost:${fileServicePort.value}/")
+      "target/selenium",
+      s"http://localhost:${fileServicePort.value}/target/selenium/")
 
   useJSEnv.value match {
     case Chrome =>
@@ -144,10 +140,6 @@ lazy val tests = project
   .in(file("tests"))
   .settings(
     scalaJSUseMainModuleInitializer := true,
-    Compile / scalaJSLinkerConfig ~= { cfg =>
-      import org.scalajs.linker.interface.OutputPatterns
-      cfg.withOutputPatterns(OutputPatterns.fromJSFile("worker-%s.js"))
-    },
     (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
     buildInfoKeys := Seq[BuildInfoKey](
       fileServicePort,

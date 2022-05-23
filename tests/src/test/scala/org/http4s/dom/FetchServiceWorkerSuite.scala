@@ -44,7 +44,10 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
         window
           .navigator
           .serviceWorker
-          .register("worker-main.js", js.Dynamic.literal(scope = "/"))
+          .register(
+            s"/${BuildInfo.workerDir}/main.js",
+            js.Dynamic.literal(scope = "/")
+          )
       }
     }.both(IO.async_[Unit] { cb =>
       window
