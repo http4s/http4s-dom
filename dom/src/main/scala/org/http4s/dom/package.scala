@@ -54,7 +54,8 @@ package object dom {
       Response[F](
         status = status,
         headers = fromDomHeaders(response.headers),
-        body = fromReadableStream(response.body)
+        // response.body can be null on Node.js e.g. for no-content responses
+        body = Stream.fromOption(Option(response.body)).flatMap(fromReadableStream[F])
       )
     }
 

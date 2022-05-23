@@ -33,6 +33,7 @@ import org.scalajs.dom.{Response => FetchResponse}
 
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration._
+import cats.data.OptionT
 
 private[dom] object FetchClient {
 
@@ -86,7 +87,8 @@ private[dom] object FetchClient {
           }
         } {
           case (r, exitCase) =>
-            closeReadableStream(r.body, exitCase)
+            // response.body can be null on Node.js e.g. for no-content responses
+            OptionT.fromOption(Option(r.body)).foreachF(closeReadableStream(_, exitCase))
         }
         .evalMap(fromDomResponse[F])
 
