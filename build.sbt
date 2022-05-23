@@ -150,7 +150,7 @@ lazy val tests = project
   .settings(
     scalaJSUseMainModuleInitializer := true,
     Test / test := {
-      if (useJSEnv.value != JSEnv.NodeJS)
+      if (useJSEnv.value != NodeJS)
         (Test / test).dependsOn(Compile / fastOptJS).value
       else
         ()
@@ -178,7 +178,7 @@ lazy val nodeJSTests = project
   .in(file("tests-nodejs"))
   .settings(
     Test / test := {
-      if (useJSEnv.value == JSEnv.NodeJS)
+      if (useJSEnv.value == NodeJS)
         (Test / test).value
       else
         ()
