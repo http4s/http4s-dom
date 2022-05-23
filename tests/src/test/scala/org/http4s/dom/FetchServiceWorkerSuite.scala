@@ -23,6 +23,7 @@ import fs2.Stream
 import munit.CatsEffectSuite
 import org.http4s.Method._
 import org.http4s.client.dsl.io._
+import org.http4s.client.testkit.testroutes.GetRoutes
 import org.http4s.multipart.Multiparts
 import org.http4s.multipart.Part
 import org.http4s.syntax.all._
@@ -60,7 +61,7 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
   }
 
   test("Repeat a simple request") {
-    val path = GetRoutes.SimplePath
+    val path = GetRoutes.SimplePath.tail
 
     def fetchBody = client.toKleisli(_.as[String]).local { (uri: Uri) => Request(uri = uri) }
 
@@ -100,11 +101,11 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
     }
   }
 
-  GetRoutes.getPaths[IO].toList.foreach {
+  GetRoutes.getPaths.toList.foreach {
     case (path, expected) =>
       test(s"Execute GET $path") {
         client
-          .run(GET(baseUrl / path))
+          .run(GET(baseUrl / path.tail))
           .use(resp => expected.flatMap(checkResponse(resp, _)))
           .assert
       }
