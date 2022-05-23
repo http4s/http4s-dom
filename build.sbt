@@ -50,7 +50,7 @@ ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
 ThisBuild / githubWorkflowBuildPreamble +=
   WorkflowStep.Use(
     UseRef.Public("actions", "setup-node", "v2"),
-    name = Some("Setup NodeJS v18 LTS"),
+    name = Some("Setup NodeJS v18"),
     params = Map("node-version" -> "18"),
     cond = Some("matrix.jsenv == 'NodeJS'")
   )
