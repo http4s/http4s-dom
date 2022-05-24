@@ -23,7 +23,8 @@ import fs2.Stream
 import munit.CatsEffectSuite
 import org.http4s.Method._
 import org.http4s.client.dsl.io._
-import org.http4s.multipart.Multipart
+import org.http4s.client.testkit.testroutes.GetRoutes
+import org.http4s.multipart.Multiparts
 import org.http4s.multipart.Part
 import org.http4s.syntax.all._
 import org.scalajs.dom.Event
@@ -60,7 +61,7 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
   }
 
   test("Repeat a simple request") {
-    val path = GetRoutes.SimplePath
+    val path = GetRoutes.SimplePath.tail
 
     def fetchBody = client.toKleisli(_.as[String]).local { (uri: Uri) => Request(uri = uri) }
 
@@ -88,18 +89,23 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
   }
 
   test("POST a multipart body") {
-    val multipart = Multipart[IO](Vector(Part.formData("text", "This is text.")))
-    client
-      .expect[String](POST(multipart, baseUrl / "echo").withHeaders(multipart.headers))
-      .map(_.contains("This is text."))
-      .assert
+    Multiparts.forSync[IO].flatMap { multiparts =>
+      multiparts
+        .multipart(Vector(Part.formData[IO]("text", "This is text.")))
+        .flatMap { multipart =>
+          client
+            .expect[String](POST(multipart, baseUrl / "echo").withHeaders(multipart.headers))
+            .map(_.contains("This is text."))
+            .assert
+        }
+    }
   }
 
-  GetRoutes.getPaths[IO].toList.foreach {
+  GetRoutes.getPaths.toList.foreach {
     case (path, expected) =>
       test(s"Execute GET $path") {
         client
-          .run(GET(baseUrl / path))
+          .run(GET(baseUrl / path.tail))
           .use(resp => expected.flatMap(checkResponse(resp, _)))
           .assert
       }
