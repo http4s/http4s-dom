@@ -109,15 +109,11 @@ ThisBuild / Test / jsEnv := {
 
 val catsEffectVersion = "3.3.12"
 val fs2Version = "3.2.7"
-val http4sVersion = "0.23.11-506-d570136-SNAPSHOT"
-// val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
+val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.2.0"
-val circeVersion = "0.15.0-M1"
+val circeVersion = "0.14.2"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
-
-ThisBuild / resolvers +=
-  "s01 snapshots".at("https://s01.oss.sonatype.org/content/repositories/snapshots/")
 
 lazy val root =
   project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
