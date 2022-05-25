@@ -17,6 +17,7 @@
 package org.http4s
 package dom
 
+import cats.data.OptionT
 import cats.effect.Async
 import cats.effect.Poll
 import cats.effect.Resource
@@ -33,7 +34,6 @@ import org.scalajs.dom.{Response => FetchResponse}
 
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration._
-import cats.data.OptionT
 
 private[dom] object FetchClient {
 
