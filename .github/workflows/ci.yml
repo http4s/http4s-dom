@@ -31,12 +31,16 @@ jobs:
         os: [ubuntu-latest]
         scala: [2.12.15, 3.1.2, 2.13.8]
         java: [temurin@8]
-        browser: [Chrome, Firefox]
+        jsenv: [Chrome, Firefox, NodeJS]
         exclude:
           - scala: 2.12.15
-            browser: Firefox
+            jsenv: Firefox
+          - scala: 2.12.15
+            jsenv: NodeJS
           - scala: 3.1.2
-            browser: Firefox
+            jsenv: Firefox
+          - scala: 3.1.2
+            jsenv: NodeJS
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout current branch (full)
@@ -72,41 +76,47 @@ jobs:
             ~/Library/Caches/Coursier/v1
           key: ${{ runner.os }}-sbt-cache-v2-${{ hashFiles('**/*.sbt') }}-${{ hashFiles('project/build.properties') }}
 
+      - name: Setup NodeJS v18
+        if: matrix.jsenv == 'NodeJS'
+        uses: actions/setup-node@v2
+        with:
+          node-version: 18
+
       - name: Check that workflows are up to date
-        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' ''project /'' githubWorkflowCheck'
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.jsenv }}'' ''project /'' githubWorkflowCheck'
 
       - name: Check headers and formatting
         if: matrix.java == 'temurin@8'
-        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' headerCheckAll scalafmtCheckAll ''project /'' scalafmtSbtCheck'
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.jsenv }}'' headerCheckAll scalafmtCheckAll ''project /'' scalafmtSbtCheck'
 
       - name: Test
-        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' test'
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.jsenv }}'' test'
 
       - name: Check binary compatibility
         if: matrix.java == 'temurin@8'
-        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' mimaReportBinaryIssues'
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.jsenv }}'' mimaReportBinaryIssues'
 
       - name: Generate API documentation
         if: matrix.java == 'temurin@8'
-        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' doc'
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.jsenv }}'' doc'
 
       - name: Check unused compile dependencies
         if: matrix.java == 'temurin@8'
-        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.browser }}'' unusedCompileDependenciesTest'
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.jsenv }}'' unusedCompileDependenciesTest'
 
       - name: Make target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/series/0.2')
-        run: mkdir -p target site/target tests/target dom/target jsdocs/target project/target
+        run: mkdir -p target site/target tests/target dom/target tests-nodejs/target jsdocs/target project/target
 
       - name: Compress target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/series/0.2')
-        run: tar cf targets.tar target site/target tests/target dom/target jsdocs/target project/target
+        run: tar cf targets.tar target site/target tests/target dom/target tests-nodejs/target jsdocs/target project/target
 
       - name: Upload target directories
         if: github.event_name != 'pull_request' && (startsWith(github.ref, 'refs/tags/v') || github.ref == 'refs/heads/series/0.2')
         uses: actions/upload-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-${{ matrix.scala }}-${{ matrix.browser }}
+          name: target-${{ matrix.os }}-${{ matrix.java }}-${{ matrix.scala }}-${{ matrix.jsenv }}
           path: targets.tar
 
   publish:

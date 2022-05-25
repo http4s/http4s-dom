@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Typelevel
+ * Copyright 2021 http4s.org
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,9 +14,12 @@
  * limitations under the License.
  */
 
-sealed abstract class JSEnv
-object JSEnv {
-  case object NodeJS extends JSEnv
-  case object Chrome extends JSEnv
-  case object Firefox extends JSEnv
+package org.http4s
+package dom
+
+import cats.effect.IO
+import org.http4s.client.testkit.ClientRouteTestBattery
+
+class NodeJSFetchSuite extends ClientRouteTestBattery("FetchClient") {
+  def clientResource = FetchClientBuilder[IO].resource
 }
