@@ -181,7 +181,6 @@ lazy val docs = project
       "calico" -> url("https://armanbilge.github.io/calico/")
     ),
     mdocVariables ++= Map(
-      "js-opt" -> "fast",
       "HTTP4S_VERSION" -> http4sVersion,
       "CIRCE_VERSION" -> circeVersion
     ),
