@@ -11,11 +11,12 @@ Features:
 
 Notably, http4s-dom can also be used to create _serverless_ apps with [Cloudflare Workers](https://workers.cloudflare.com) which have adopted the same APIs used in the browser!
 
+It is also possible to use the `FetchClient` in Node.js v18+, which added [experimental support](https://nodejs.org/en/blog/announcements/v18-release-announce/#fetch-experimental) for `fetch`, although some browser-specific features may not be available.
+
 ### Usage
 
 [![http4s-dom Scala version support](https://index.scala-lang.org/http4s/http4s-dom/http4s-dom/latest.svg)](https://index.scala-lang.org/http4s/http4s-dom/http4s-dom)
 
 ```scala
-// Supports http4s 0.23.x
-libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.2.1"
+libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.2.2"
 ```

@@ -17,21 +17,9 @@
 package org.http4s
 package dom
 
-import cats.effect._
-import org.http4s.Status._
-import org.http4s.client.testkit.testroutes.GetRoutes
+import cats.effect.IO
+import org.http4s.client.testkit.ClientRouteTestBattery
 
-object TestRoutes {
-  def routes: HttpRoutes[IO] = HttpRoutes.of {
-    case request =>
-      val get = Some(request).filter(_.method == Method.GET).flatMap { r =>
-        GetRoutes.getPaths.get(s"/${r.uri.path.segments.last}")
-      }
-
-      val post = Some(request).filter(_.method == Method.POST).map { r =>
-        IO(Response(entity = r.entity))
-      }
-
-      get.orElse(post).getOrElse(IO(Response[IO](NotFound)))
-  }
+class NodeJSFetchSuite extends ClientRouteTestBattery("FetchClient") {
+  def clientResource = FetchClientBuilder[IO].resource
 }

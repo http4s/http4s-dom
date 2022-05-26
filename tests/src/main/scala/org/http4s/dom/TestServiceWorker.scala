@@ -35,7 +35,7 @@ object TestServiceWorker {
           )
       )
 
-    ServiceWorker.addFetchEventListener(IO.pure(TestRoutes[IO])).void.unsafeRunSync()
+    ServiceWorker.addFetchEventListener(IO.pure(TestRoutes.routes)).void.unsafeRunSync()
   }
 
 }

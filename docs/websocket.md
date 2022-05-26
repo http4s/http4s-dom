@@ -1,6 +1,6 @@
 # WebSocket Client
 
-The [`WebSocketClient`](https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/WSClient$.html) creates a standard http4s [`WSClientHighLevel`](https://http4s.org/v0.23/api/org/http4s/client/client).
+The @:api(org.http4s.dom.WebSocketClient$) implements the http4s @:api(org.http4s.client.websocket.WSClientHighLevel) interface.
 
 ## Example
 
@@ -28,15 +28,15 @@ import org.http4s.dom._
 import org.http4s.syntax.all._
 import org.scalajs.dom._
 
-val message = document.getElementById("message").asInstanceOf[html.Input]
-val button = document.getElementById("button").asInstanceOf[html.Button]
-val sent = document.getElementById("sent").asInstanceOf[html.Element]
-val received = document.getElementById("received").asInstanceOf[html.Element]
+val message = document.getElementById("message").asInstanceOf[HTMLInputElement]
+val button = document.getElementById("button").asInstanceOf[HTMLButtonElement]
+val sent = document.getElementById("sent").asInstanceOf[HTMLElement]
+val received = document.getElementById("received").asInstanceOf[HTMLElement]
 
 val request = WSRequest(uri"wss://ws.postman-echo.com/raw")
 val app = WebSocketClient[IO].connectHighLevel(request).use { conn =>
 
-  def log(e: html.Element, text: String): IO[Unit] =
+  def log(e: HTMLElement, text: String): IO[Unit] =
     IO {
       val p = document.createElement("p")
       p.innerHTML = text

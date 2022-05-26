@@ -108,9 +108,9 @@ object WebSocketClient {
               .flatMap(close.complete(_)) *> messages.offer(None)
 
             F.delay(ws.readyState).flatMap {
-              case 0 | 1 => shutdown // CONNECTING | OPEN
-              case 2 => close.get.void // CLOSING
-              case 3 => F.unit // CLOSED
+              case WebSocket.CONNECTING | WebSocket.OPEN => shutdown
+              case WebSocket.CLOSING => close.get.void
+              case WebSocket.CLOSED => F.unit
               case s => F.raiseError(new IllegalStateException(s"WebSocket.readyState: $s"))
             }
         }

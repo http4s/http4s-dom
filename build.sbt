@@ -17,6 +17,7 @@
 import org.openqa.selenium.WebDriver
 import org.openqa.selenium.chrome.ChromeOptions
 import org.openqa.selenium.firefox.FirefoxOptions
+import org.scalajs.jsenv.nodejs.NodeJSEnv
 import org.scalajs.jsenv.selenium.SeleniumJSEnv
 
 import JSEnv._
@@ -28,24 +29,33 @@ ThisBuild / developers := List(
   tlGitHubDev("armanbilge", "Arman Bilge")
 )
 ThisBuild / startYear := Some(2021)
-ThisBuild / tlSiteApiUrl := Some(url(
-  "https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/latest/org/http4s/dom/index.html"))
 
 ThisBuild / githubWorkflowTargetBranches := Seq("main")
 ThisBuild / tlCiReleaseBranches := Seq("main")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-ThisBuild / crossScalaVersions := Seq("3.1.1", "2.13.8")
+ThisBuild / crossScalaVersions := Seq("3.1.2", "2.13.8")
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
-ThisBuild / githubWorkflowBuildMatrixAdditions += "browser" -> List("Chrome", "Firefox")
-ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.browser }}"
+
+val jsEnvs = List("Chrome", "Firefox", "NodeJS")
+ThisBuild / githubWorkflowBuildMatrixAdditions += "jsenv" -> jsEnvs
+ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.jsenv }}"
 ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
   for {
     scala <- (ThisBuild / crossScalaVersions).value.init
-  } yield MatrixExclude(Map("scala" -> scala, "browser" -> "Firefox"))
+    jsenv <- jsEnvs.tail
+  } yield MatrixExclude(Map("scala" -> scala, "jsenv" -> jsenv))
 }
 
-lazy val useJSEnv = settingKey[JSEnv]("Browser for running Scala.js tests")
+ThisBuild / githubWorkflowBuildPreamble +=
+  WorkflowStep.Use(
+    UseRef.Public("actions", "setup-node", "v2"),
+    name = Some("Setup NodeJS v18"),
+    params = Map("node-version" -> "18"),
+    cond = Some("matrix.jsenv == 'NodeJS'")
+  )
+
+lazy val useJSEnv = settingKey[JSEnv]("JSEnv for running Scala.js tests")
 Global / useJSEnv := Chrome
 
 lazy val fileServicePort = settingKey[Int]("Port for static file server")
@@ -98,6 +108,7 @@ ThisBuild / Test / jsEnv := {
       s"http://localhost:${fileServicePort.value}/target/selenium/")
 
   useJSEnv.value match {
+    case NodeJS => new NodeJSEnv()
     case Chrome =>
       val options = new ChromeOptions()
       options.setHeadless(true)
@@ -109,16 +120,16 @@ ThisBuild / Test / jsEnv := {
   }
 }
 
-val catsEffectVersion = "3.3.8"
-val fs2Version = "3.2.5"
-val http4sVersion = "1.0.0-M32"
-val scalaJSDomVersion = "2.1.0"
-val circeVersion = "0.15.0-M1"
+val catsEffectVersion = "3.3.12"
+val fs2Version = "3.2.7"
+val http4sVersion = "1.0.0-M33"
+val scalaJSDomVersion = "2.2.0"
+val circeVersion = "0.14.2"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
 
 lazy val root =
-  project.in(file(".")).aggregate(dom, tests).enablePlugins(NoPublishPlugin)
+  project.in(file(".")).aggregate(dom, tests, nodeJSTests).enablePlugins(NoPublishPlugin)
 
 lazy val dom = project
   .in(file("dom"))
@@ -138,16 +149,50 @@ lazy val tests = project
   .in(file("tests"))
   .settings(
     scalaJSUseMainModuleInitializer := true,
-    (Test / test) := (Test / test).dependsOn(Compile / fastOptJS).value,
-    buildInfoKeys := Seq[BuildInfoKey](scalaVersion, fileServicePort),
+    Test / test := {
+      if (useJSEnv.value != NodeJS)
+        (Test / test).dependsOn(Compile / fastOptJS).value
+      else
+        ()
+    },
+    buildInfoKeys := Seq[BuildInfoKey](
+      fileServicePort,
+      BuildInfoKey(
+        "workerDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory)
+          .value
+          .relativeTo((ThisBuild / baseDirectory).value)
+          .get
+          .toString
+      )
+    ),
     buildInfoPackage := "org.http4s.dom",
     libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
       "org.scalameta" %%% "munit" % munitVersion % Test,
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
     )
   )
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
+
+lazy val nodeJSTests = project
+  .in(file("tests-nodejs"))
+  .settings(
+    Test / test := {
+      if (useJSEnv.value == NodeJS)
+        (Test / test).value
+      else
+        ()
+    },
+    libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
+      "org.scalameta" %%% "munit" % munitVersion % Test,
+      "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
+    ),
+    scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .dependsOn(dom)
+  .enablePlugins(ScalaJSPlugin, NoPublishPlugin)
 
 lazy val jsdocs =
   project
@@ -164,14 +209,33 @@ lazy val jsdocs =
 lazy val docs = project
   .in(file("site"))
   .settings(
+    tlSiteApiModule := Some((dom / projectID).value),
+    tlSiteApiPackage := Some("org.http4s.dom"),
     tlFatalWarningsInCi := false,
     mdocJS := Some(jsdocs),
+    tlSiteRelatedProjects ++= Seq(
+      "calico" -> url("https://armanbilge.github.io/calico/")
+    ),
     mdocVariables ++= Map(
-      "js-opt" -> "fast",
       "HTTP4S_VERSION" -> http4sVersion,
       "CIRCE_VERSION" -> circeVersion
     ),
-    laikaConfig ~= { _.withRawContent },
+    laikaConfig := {
+      import laika.rewrite.link._
+      laikaConfig
+        .value
+        .withRawContent
+        .withConfigValue(LinkConfig(apiLinks = List(
+          ApiLinks(
+            baseUri =
+              s"https://www.javadoc.io/doc/org.http4s/http4s-dom_sjs1_2.13/${mdocVariables.value("VERSION")}/",
+            packagePrefix = "org.http4s.dom"),
+          ApiLinks(
+            baseUri = s"https://www.javadoc.io/doc/org.http4s/http4s-docs_2.13/$http4sVersion/",
+            packagePrefix = "org.http4s"
+          )
+        )))
+    },
     tlSiteHeliumConfig ~= {
       // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
       _.site.autoLinkJS()
