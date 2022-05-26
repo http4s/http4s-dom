@@ -54,7 +54,7 @@ package object dom {
       Response[F](
         status = status,
         headers = fromDomHeaders(response.headers),
-        entity = Entity(fromReadableStream(response.body), None)
+        entity = Option(response.body).foldMap(b => Entity(fromReadableStream(b), None))
       )
     }
 
