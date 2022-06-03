@@ -21,8 +21,4 @@ libraryDependencies += "org.http4s" %%% "http4s-dom" % "@VERSION@"
 
 // recommended, brings in the latest client module
 libraryDependencies += "org.http4s" %%% "http4s-client" % "@HTTP4S_VERSION@"
-
-// optional, for JSON support
-libraryDependencies += "org.http4s" %%% "http4s-circe" % "@HTTP4S_VERSION@"
-libraryDependencies += "io.circe" %%% "circe-generic" % "@CIRCE_VERSION@"
 ```
