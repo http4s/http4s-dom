@@ -41,57 +41,64 @@ private[dom] object FetchClient {
       requestTimeout: Duration,
       options: FetchOptions
   )(implicit F: Async[F]): Client[F] = Client[F] { (req: Request[F]) =>
-    Resource.eval(req.body.chunkAll.filter(_.nonEmpty).compile.last).flatMap { body =>
-      Resource
-        .makeCaseFull { (poll: Poll[F]) =>
-          F.delay(new AbortController()).flatMap { abortController =>
-            val requestOptions = req.attributes.lookup(FetchOptions.Key)
-            val mergedOptions = requestOptions.fold(options)(options.merge)
+    Resource
+      .eval(
+        (if (req.isChunked) req.toStrict(None) else req.pure)
+          .mproduct(_.body.chunkAll.filter(_.nonEmpty).compile.last)
+      )
+      .flatMap {
+        case (req, body) =>
+          Resource
+            .makeCaseFull { (poll: Poll[F]) =>
+              F.delay(new AbortController()).flatMap { abortController =>
+                val requestOptions = req.attributes.lookup(FetchOptions.Key)
+                val mergedOptions = requestOptions.fold(options)(options.merge)
 
-            val init = new RequestInit {}
+                val init = new RequestInit {}
 
-            init.method = req.method.name.asInstanceOf[HttpMethod]
-            init.headers = new Headers(toDomHeaders(req.headers))
-            body.foreach { body => init.body = body.toJSArrayBuffer }
-            init.signal = abortController.signal
-            mergedOptions.cache.foreach(init.cache = _)
-            mergedOptions.credentials.foreach(init.credentials = _)
-            mergedOptions.integrity.foreach(init.integrity = _)
-            mergedOptions.keepAlive.foreach(init.keepalive = _)
-            mergedOptions.mode.foreach(init.mode = _)
-            mergedOptions.redirect.foreach(init.redirect = _)
-            // Referer headers are forbidden in Fetch, but we make a best effort to preserve behavior across clients.
-            // See https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name
-            // If there's a Referer header, it will have more priority than the client's `referrer` (if present)
-            // but less priority than the request's `referrer` (if present).
-            requestOptions
-              .flatMap(_.referrer)
-              .orElse(req.headers.get[Referer].map(_.uri))
-              .orElse(options.referrer)
-              .foreach(referrer => init.referrer = referrer.renderString)
-            mergedOptions.referrerPolicy.foreach(init.referrerPolicy = _)
+                init.method = req.method.name.asInstanceOf[HttpMethod]
+                init.headers = new Headers(toDomHeaders(req.headers))
+                body.foreach { body => init.body = body.toJSArrayBuffer }
+                init.signal = abortController.signal
+                mergedOptions.cache.foreach(init.cache = _)
+                mergedOptions.credentials.foreach(init.credentials = _)
+                mergedOptions.integrity.foreach(init.integrity = _)
+                mergedOptions.keepAlive.foreach(init.keepalive = _)
+                mergedOptions.mode.foreach(init.mode = _)
+                mergedOptions.redirect.foreach(init.redirect = _)
+                // Referer headers are forbidden in Fetch, but we make a best effort to preserve behavior across clients.
+                // See https://developer.mozilla.org/en-US/docs/Glossary/Forbidden_header_name
+                // If there's a Referer header, it will have more priority than the client's `referrer` (if present)
+                // but less priority than the request's `referrer` (if present).
+                requestOptions
+                  .flatMap(_.referrer)
+                  .orElse(req.headers.get[Referer].map(_.uri))
+                  .orElse(options.referrer)
+                  .foreach(referrer => init.referrer = referrer.renderString)
+                mergedOptions.referrerPolicy.foreach(init.referrerPolicy = _)
 
-            val fetch = poll(F.fromPromise(F.delay(Fetch.fetch(req.uri.renderString, init))))
-              .onCancel(F.delay(abortController.abort()))
+                val fetch =
+                  poll(F.fromPromise(F.delay(Fetch.fetch(req.uri.renderString, init))))
+                    .onCancel(F.delay(abortController.abort()))
 
-            requestTimeout match {
-              case d: FiniteDuration =>
-                fetch.timeoutTo(
-                  d,
-                  F.raiseError[FetchResponse](new TimeoutException(
-                    s"Request to ${req.uri.renderString} timed out after ${d.toMillis} ms"))
-                )
-              case _ =>
-                fetch
+                requestTimeout match {
+                  case d: FiniteDuration =>
+                    fetch.timeoutTo(
+                      d,
+                      F.raiseError[FetchResponse](new TimeoutException(
+                        s"Request to ${req.uri.renderString} timed out after ${d.toMillis} ms"))
+                    )
+                  case _ =>
+                    fetch
+                }
+              }
+            } {
+              case (r, exitCase) =>
+                OptionT.fromOption(Option(r.body)).foreachF(closeReadableStream(_, exitCase))
             }
-          }
-        } {
-          case (r, exitCase) =>
-            OptionT.fromOption(Option(r.body)).foreachF(closeReadableStream(_, exitCase))
-        }
-        .evalMap(fromDomResponse[F])
+            .evalMap(fromDomResponse[F])
 
-    }
+      }
   }
 
 }
