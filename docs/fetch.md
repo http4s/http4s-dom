@@ -4,6 +4,11 @@ The @:api(org.http4s.dom.FetchClientBuilder) creates a standard http4s @:api(org
 
 ## Example
 
+```scala
+libraryDependencies += "org.http4s" %%% "http4s-circe" % "@HTTP4S_VERSION@"
+libraryDependencies += "io.circe" %%% "circe-generic" % "@CIRCE_VERSION@"
+```
+
 ```scala mdoc:js
 <div style="text-align:center">
   <h3 style="padding:10px">
