@@ -22,6 +22,7 @@ import cats.syntax.all._
 import fs2.Stream
 import munit.CatsEffectSuite
 import org.http4s.Method._
+import org.http4s.client.Client
 import org.http4s.client.dsl.io._
 import org.http4s.client.testkit.testroutes.GetRoutes
 import org.http4s.multipart.Multiparts
@@ -35,9 +36,9 @@ import scala.scalajs.js
 
 class FetchServiceWorkerSuite extends CatsEffectSuite {
 
-  val client = FetchClientBuilder[IO].create
+  val client: Client[IO] = FetchClientBuilder[IO].create
 
-  val baseUrl = uri"/"
+  val baseUrl: Uri = uri"/"
 
   test("Install service worker") {
     IO.fromPromise {
