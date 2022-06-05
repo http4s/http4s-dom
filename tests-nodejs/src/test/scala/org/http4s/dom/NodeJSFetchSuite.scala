@@ -23,5 +23,5 @@ import org.http4s.client.Client
 import org.http4s.client.testkit.ClientRouteTestBattery
 
 class NodeJSFetchSuite extends ClientRouteTestBattery("FetchClient") {
-  def clientResource: Resource[IO,Client[IO]] = FetchClientBuilder[IO].resource
+  def clientResource: Resource[IO, Client[IO]] = FetchClientBuilder[IO].resource
 }
