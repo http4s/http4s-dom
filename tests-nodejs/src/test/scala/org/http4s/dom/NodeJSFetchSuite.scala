@@ -18,8 +18,10 @@ package org.http4s
 package dom
 
 import cats.effect.IO
+import cats.effect.Resource
+import org.http4s.client.Client
 import org.http4s.client.testkit.ClientRouteTestBattery
 
 class NodeJSFetchSuite extends ClientRouteTestBattery("FetchClient") {
-  def clientResource = FetchClientBuilder[IO].resource
+  def clientResource: Resource[IO,Client[IO]] = FetchClientBuilder[IO].resource
 }

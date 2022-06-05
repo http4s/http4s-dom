@@ -29,8 +29,8 @@ import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
 import org.scalajs.dom.Fetch
-import org.scalajs.dom.ResponseInit
 import org.scalajs.dom.FetchEvent
+import org.scalajs.dom.ResponseInit
 import org.scalajs.dom.ServiceWorkerGlobalScope
 import org.scalajs.dom.{Response => DomResponse}
 import org.typelevel.vault.Key
