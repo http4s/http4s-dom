@@ -4,9 +4,9 @@ Use http4s in your browser with Scala.js! Check out the [interactive examples](h
 
 Features:
 
-* A [`Client` implementation](fetch.md) backed by [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
-* A [`WSClient` implementation](websocket.md) backed by [`WebSocket`](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
-* A [`Service Worker` integration](serviceworker.md) to install your `HttpRoutes` as a [`FetchEvent` handler](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/fetch_event)
+* A [`Client` implementation](https://http4s.github.io/http4s-dom/fetch.html) backed by [`fetch`](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API)
+* A [`WSClient` implementation](https://http4s.github.io/http4s-dom/websocket.html) backed by [`WebSocket`](https://developer.mozilla.org/en-US/docs/Web/API/WebSocket)
+* A [`Service Worker` integration](https://http4s.github.io/http4s-dom/serviceworker.html) to install your `HttpRoutes` as a [`FetchEvent` handler](https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerGlobalScope/fetch_event)
 * Encoders for [`File`](https://developer.mozilla.org/en-US/docs/Web/API/File), [`Blob`](https://developer.mozilla.org/en-US/docs/Web/API/Blob) and [`ReadableStream`](https://developer.mozilla.org/en-US/docs/Web/API/ReadableStream)
 
 Notably, http4s-dom can also be used to create _serverless_ apps with [Cloudflare Workers](https://workers.cloudflare.com) which have adopted the same APIs used in the browser!
