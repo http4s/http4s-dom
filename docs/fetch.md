@@ -10,12 +10,11 @@ libraryDependencies += "io.circe" %%% "circe-generic" % "@CIRCE_VERSION@"
 ```
 
 ```scala mdoc:js
-<div style="text-align:center">
-  <h3 style="padding:10px">
-    I'm bored.
-  </h3>
-  <button id="button">Fetch Activity</button>
-  <p style="padding:10px" id="activity"></p>
+<div>
+  <h3>How many stars?</h3>
+  <input id="repo" size="36" type="text" value="http4s/http4s" placeholder="http4s/http4s">
+  <button id="button">Fetch</button>
+  <span id="stars" style="margin-left: 1em; color: var(--secondary-color)"><span>
 </div>
 ---
 import cats.effect._
@@ -27,17 +26,24 @@ import org.scalajs.dom._
 
 val client = FetchClientBuilder[IO].create
 
-val activityElement = document.getElementById("activity")
+val repoName = document.getElementById("repo").asInstanceOf[HTMLInputElement]
+val repoStars = document.getElementById("stars").asInstanceOf[HTMLInputElement]
 
-case class Activity(activity: String)
+case class Repo(stargazers_count: Int)
 
-val fetchActivity: IO[Unit] = for {
-  _ <- IO(activityElement.innerHTML = "<i>fetching...</i>")
-  activity <- client.expect[Activity]("https://www.boredapi.com/api/activity")
-  _ <- IO(activityElement.innerHTML = activity.activity)
+val fetchRepo: IO[Unit] = for {
+  _ <- IO(repoStars.innerHTML = "<i>fetching...</i>")
+  name <- IO(repoName.value)
+  repo <- client.expect[Repo](s"https://api.github.com/repos/$name").attempt
+  _ <- IO {
+    repo match {
+      case Right(Repo(stars)) => repoStars.innerHTML = s"$stars ★"
+      case Left(_) => repoStars.innerHTML = s"Not found :("
+    }
+  }
 } yield ()
 
 val button = document.getElementById("button").asInstanceOf[HTMLButtonElement]
 
-button.onclick = _ => fetchActivity.unsafeRunAndForget()
+button.onclick = _ => fetchRepo.unsafeRunAndForget()
 ```
