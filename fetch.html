@@ -159,25 +159,31 @@
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">client</span><span> = </span><span class="type-name">FetchClientBuilder</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">create</span><span>
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">activityElement</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;activity&quot;</span><span>)
+</span><span class="keyword">val</span><span> </span><span class="identifier">repoName</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;repo&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="type-name">HTMLInputElement</span><span>]
+</span><span class="keyword">val</span><span> </span><span class="identifier">repoStars</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;stars&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="type-name">HTMLInputElement</span><span>]
 
-</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Activity</span><span>(</span><span class="identifier">activity</span><span>: </span><span class="type-name">String</span><span>)
+</span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Repo</span><span>(</span><span class="identifier">stargazers_count</span><span>: </span><span class="type-name">Int</span><span>)
 
-</span><span class="keyword">val</span><span> </span><span class="identifier">fetchActivity</span><span>: </span><span class="type-name">IO</span><span>[</span><span class="type-name">Unit</span><span>] = </span><span class="keyword">for</span><span> {
-  </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">IO</span><span>(</span><span class="identifier">activityElement</span><span>.</span><span class="identifier">innerHTML</span><span> = </span><span class="string-literal">&quot;&lt;i&gt;fetching...&lt;/i&gt;&quot;</span><span>)
-  </span><span class="identifier">activity</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">expect</span><span>[</span><span class="type-name">Activity</span><span>](</span><span class="string-literal">&quot;https://www.boredapi.com/api/activity&quot;</span><span>)
-  </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">IO</span><span>(</span><span class="identifier">activityElement</span><span>.</span><span class="identifier">innerHTML</span><span> = </span><span class="identifier">activity</span><span>.</span><span class="identifier">activity</span><span>)
+</span><span class="keyword">val</span><span> </span><span class="identifier">fetchRepo</span><span>: </span><span class="type-name">IO</span><span>[</span><span class="type-name">Unit</span><span>] = </span><span class="keyword">for</span><span> {
+  </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">IO</span><span>(</span><span class="identifier">repoStars</span><span>.</span><span class="identifier">innerHTML</span><span> = </span><span class="string-literal">&quot;&lt;i&gt;fetching...&lt;/i&gt;&quot;</span><span>)
+  </span><span class="identifier">name</span><span> &lt;- </span><span class="type-name">IO</span><span>(</span><span class="identifier">repoName</span><span>.</span><span class="identifier">value</span><span>)
+  </span><span class="identifier">repo</span><span> &lt;- </span><span class="identifier">client</span><span>.</span><span class="identifier">expect</span><span>[</span><span class="type-name">Repo</span><span>](</span><span class="string-literal">s&quot;https://api.github.com/repos/</span><span class="substitution">$name</span><span class="string-literal">&quot;</span><span>).</span><span class="identifier">attempt</span><span>
+  </span><span class="identifier">_</span><span> &lt;- </span><span class="type-name">IO</span><span> {
+    </span><span class="identifier">repo</span><span> </span><span class="keyword">match</span><span> {
+      </span><span class="keyword">case</span><span> </span><span class="type-name">Right</span><span>(</span><span class="type-name">Repo</span><span>(</span><span class="identifier">stars</span><span>)) =&gt; </span><span class="identifier">repoStars</span><span>.</span><span class="identifier">innerHTML</span><span> = </span><span class="string-literal">s&quot;</span><span class="substitution">$stars</span><span class="string-literal"> ★&quot;</span><span>
+      </span><span class="keyword">case</span><span> </span><span class="type-name">Left</span><span>(</span><span class="identifier">_</span><span>) =&gt; </span><span class="identifier">repoStars</span><span>.</span><span class="identifier">innerHTML</span><span> = </span><span class="string-literal">s&quot;Not found :(&quot;</span><span>
+    }
+  }
 } </span><span class="keyword">yield</span><span> ()
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">button</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;button&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="type-name">HTMLButtonElement</span><span>]
 
-</span><span class="identifier">button</span><span>.</span><span class="identifier">onclick</span><span> = </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">fetchActivity</span><span>.</span><span class="identifier">unsafeRunAndForget</span><span>()</span></code></pre>
-        <div id="mdoc-html-run0" data-mdoc-js><div style="text-align:center">
-          <h3 style="padding:10px">
-            I&#39;m bored.
-          </h3>
-          <button id="button">Fetch Activity</button>
-          <p style="padding:10px" id="activity"></p>
+</span><span class="identifier">button</span><span>.</span><span class="identifier">onclick</span><span> = </span><span class="identifier">_</span><span> =&gt; </span><span class="identifier">fetchRepo</span><span>.</span><span class="identifier">unsafeRunAndForget</span><span>()</span></code></pre>
+        <div id="mdoc-html-run0" data-mdoc-js><div>
+          <h3>How many stars?</h3>
+          <input id="repo" size="36" type="text" value="http4s/http4s" placeholder="http4s/http4s">
+          <button id="button">Fetch</button>
+          <span id="stars" style="margin-left: 1em; color: var(--secondary-color)"><span>
         </div></div>
         <p><script type="text/javascript" src="fetch.md.js" defer></script>
         <script type="text/javascript" src="mdoc.js" defer></script></p>
