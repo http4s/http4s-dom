@@ -160,7 +160,7 @@
 </span><span class="keyword">val</span><span> </span><span class="identifier">client</span><span> = </span><span class="type-name">FetchClientBuilder</span><span>[</span><span class="type-name">IO</span><span>].</span><span class="identifier">create</span><span>
 
 </span><span class="keyword">val</span><span> </span><span class="identifier">repoName</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;repo&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="type-name">HTMLInputElement</span><span>]
-</span><span class="keyword">val</span><span> </span><span class="identifier">repoStars</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;stars&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="type-name">HTMLInputElement</span><span>]
+</span><span class="keyword">val</span><span> </span><span class="identifier">repoStars</span><span> = </span><span class="identifier">document</span><span>.</span><span class="identifier">getElementById</span><span>(</span><span class="string-literal">&quot;stars&quot;</span><span>).</span><span class="identifier">asInstanceOf</span><span>[</span><span class="type-name">HTMLElement</span><span>]
 
 </span><span class="keyword">case</span><span> </span><span class="keyword">class</span><span> </span><span class="type-name">Repo</span><span>(</span><span class="identifier">stargazers_count</span><span>: </span><span class="type-name">Int</span><span>)
 
