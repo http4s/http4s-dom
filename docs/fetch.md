@@ -27,7 +27,7 @@ import org.scalajs.dom._
 val client = FetchClientBuilder[IO].create
 
 val repoName = document.getElementById("repo").asInstanceOf[HTMLInputElement]
-val repoStars = document.getElementById("stars").asInstanceOf[HTMLInputElement]
+val repoStars = document.getElementById("stars").asInstanceOf[HTMLElement]
 
 case class Repo(stargazers_count: Int)
 
