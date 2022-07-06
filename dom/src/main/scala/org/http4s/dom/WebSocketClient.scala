@@ -26,7 +26,6 @@ import cats.effect.std.Queue
 import cats.effect.std.Semaphore
 import cats.effect.syntax.all._
 import cats.syntax.all._
-import fs2.INothing
 import fs2.Stream
 import org.http4s.Method
 import org.http4s.client.websocket.WSClientHighLevel
@@ -51,7 +50,7 @@ object WebSocketClient {
         dispatcher <- Dispatcher[F]
         messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
         semaphore <- Semaphore[F](1).toResource
-        error <- F.deferred[Either[Throwable, INothing]].toResource
+        error <- F.deferred[Throwable].toResource
         close <- F.deferred[CloseEvent].toResource
         ws <- Resource.makeCase {
           F.async_[WebSocket] { cb =>
@@ -69,8 +68,7 @@ object WebSocketClient {
 
             ws.onopen = { _ =>
               ws.onerror = // replace the error handler
-                e =>
-                  dispatcher.unsafeRunAndForget(error.complete(Left(js.JavaScriptException(e))))
+                e => dispatcher.unsafeRunAndForget(error.complete(js.JavaScriptException(e)))
               cb(Right(ws))
             }
 
@@ -122,7 +120,7 @@ object WebSocketClient {
         def receive: F[Option[WSDataFrame]] = semaphore
           .permit
           .surround(OptionT(messages.take).map(decodeMessage).value)
-          .race(error.get.rethrow)
+          .race(error.get.flatMap(F.raiseError[Option[WSDataFrame]]))
           .map(_.merge)
 
         override def receiveStream: Stream[F, WSDataFrame] =
@@ -130,7 +128,7 @@ object WebSocketClient {
             .resource(semaphore.permit)
             .flatMap(_ => Stream.fromQueueNoneTerminated(messages))
             .map(decodeMessage)
-            .concurrently(Stream.exec(error.get.rethrow.widen))
+            .concurrently(Stream.exec(error.get.flatMap(F.raiseError)))
 
         private def decodeMessage(e: MessageEvent): WSDataFrame =
           e.data match {
@@ -156,7 +154,7 @@ object WebSocketClient {
           }
 
         private def errorOr(fu: F[Unit]): F[Unit] = error.tryGet.flatMap {
-          case Some(error) => F.fromEither[Unit](error)
+          case Some(error) => F.raiseError(error)
           case None => fu
         }
 

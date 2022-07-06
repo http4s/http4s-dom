@@ -41,13 +41,13 @@ private[dom] object FetchClient {
       requestTimeout: Duration,
       options: FetchOptions
   )(implicit F: Async[F]): Client[F] = Client[F] { (req: Request[F]) =>
-    Resource.eval {
-      req.entity match {
-        case Entity.Empty => None.pure
-        case Entity.Strict(chunk) => Some(chunk).pure
+    Resource.eval(req.toStrict(None)).flatMap { req =>
+      val body = req.entity match {
+        case Entity.Empty => None
+        case Entity.Strict(chunk) => Some(chunk)
         case default => default.body.chunkAll.filter(_.nonEmpty).compile.last
       }
-    } flatMap { body =>
+
       Resource
         .makeCaseFull { (poll: Poll[F]) =>
           F.delay(new AbortController()).flatMap { abortController =>
@@ -77,8 +77,9 @@ private[dom] object FetchClient {
               .foreach(referrer => init.referrer = referrer.renderString)
             mergedOptions.referrerPolicy.foreach(init.referrerPolicy = _)
 
-            val fetch = poll(F.fromPromise(F.delay(Fetch.fetch(req.uri.renderString, init))))
-              .onCancel(F.delay(abortController.abort()))
+            val fetch =
+              poll(F.fromPromise(F.delay(Fetch.fetch(req.uri.renderString, init))))
+                .onCancel(F.delay(abortController.abort()))
 
             requestTimeout match {
               case d: FiniteDuration =>
@@ -95,7 +96,7 @@ private[dom] object FetchClient {
           case (r, exitCase) =>
             OptionT.fromOption(Option(r.body)).foreachF(closeReadableStream(_, exitCase))
         }
-        .evalMap(fromDomResponse[F])
+        .evalMap(fromDomResponse[F](_))
 
     }
   }
