@@ -128,8 +128,10 @@ val circeVersion = "0.14.2"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
 
-lazy val root =
-  project.in(file(".")).aggregate(dom, tests, nodeJSTests).enablePlugins(NoPublishPlugin)
+lazy val root = project
+  .in(file("."))
+  .aggregate(dom, tests, nodeJSTests, bundleSizeTest)
+  .enablePlugins(NoPublishPlugin)
 
 lazy val dom = project
   .in(file("dom"))
@@ -190,6 +192,17 @@ lazy val nodeJSTests = project
       "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
+  )
+  .dependsOn(dom)
+  .enablePlugins(ScalaJSPlugin, NoPublishPlugin)
+
+lazy val bundleSizeTest = project
+  .in(file("bundle-size-test"))
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-circe" % http4sVersion
+    )
   )
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, NoPublishPlugin)
