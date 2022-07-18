@@ -204,6 +204,7 @@ lazy val artifactSizeTest = project
       "org.http4s" %%% "http4s-circe" % http4sVersion
     ),
     bundleMonCheckRun := true,
+    bundleMonCommitStatus := false,
     bundleMonPrComment := false
   )
   .dependsOn(dom)
