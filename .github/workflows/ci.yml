@@ -102,7 +102,7 @@ jobs:
 
       - name: Monitor artifact size
         if: matrix.jsenv == 'Chrome'
-        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.jsenv }}'' aftifactSizeTest/bundleMon'
+        run: 'sbt ''++${{ matrix.scala }}'' ''set Global / useJSEnv := JSEnv.${{ matrix.jsenv }}'' artifactSizeTest/bundleMon'
 
       - name: Check scalafix lints
         if: matrix.java == 'temurin@8' && !startsWith(matrix.scala, '3.')

@@ -211,7 +211,7 @@ lazy val artifactSizeTest = project
 
 ThisBuild / githubWorkflowBuild +=
   WorkflowStep.Sbt(
-    List("aftifactSizeTest/bundleMon"),
+    List("artifactSizeTest/bundleMon"),
     name = Some("Monitor artifact size"),
     cond = Some("matrix.jsenv == 'Chrome'")
   )
