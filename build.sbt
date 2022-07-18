@@ -128,8 +128,10 @@ val circeVersion = "0.14.2"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
 
-lazy val root =
-  project.in(file(".")).aggregate(dom, tests, nodeJSTests).enablePlugins(NoPublishPlugin)
+lazy val root = project
+  .in(file("."))
+  .aggregate(dom, tests, nodeJSTests, artifactSizeTest)
+  .enablePlugins(NoPublishPlugin)
 
 lazy val dom = project
   .in(file("dom"))
@@ -193,6 +195,27 @@ lazy val nodeJSTests = project
   )
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, NoPublishPlugin)
+
+lazy val artifactSizeTest = project
+  .in(file("artifact-size-test"))
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-circe" % http4sVersion
+    ),
+    bundleMonCheckRun := true,
+    bundleMonCommitStatus := false,
+    bundleMonPrComment := false
+  )
+  .dependsOn(dom)
+  .enablePlugins(BundleMonPlugin, NoPublishPlugin)
+
+ThisBuild / githubWorkflowBuild +=
+  WorkflowStep.Sbt(
+    List("artifactSizeTest/bundleMon"),
+    name = Some("Monitor artifact size"),
+    cond = Some("matrix.jsenv == 'Chrome'")
+  )
 
 lazy val jsdocs =
   project
