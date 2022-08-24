@@ -63,16 +63,18 @@ Global / fileServicePort := {
   import cats.data.Kleisli
   import cats.effect.IO
   import cats.effect.unsafe.implicits.global
+  import com.comcast.ip4s._
   import org.http4s._
   import org.http4s.dsl.io._
-  import org.http4s.blaze.server.BlazeServerBuilder
+  import org.http4s.ember.server.EmberServerBuilder
   import org.http4s.server.staticcontent._
   import java.net.InetSocketAddress
 
   (for {
     deferredPort <- IO.deferred[Int]
-    _ <- BlazeServerBuilder[IO]
-      .bindSocketAddress(new InetSocketAddress("localhost", 0))
+    _ <- EmberServerBuilder
+      .default[IO]
+      .withPort(port"0")
       .withHttpWebSocketApp { wsb =>
         HttpRoutes
           .of[IO] {
@@ -91,7 +93,7 @@ Global / fileServicePort := {
           }
           .orNotFound
       }
-      .resource
+      .build
       .map(_.address.getPort)
       .evalTap(deferredPort.complete(_))
       .useForever
