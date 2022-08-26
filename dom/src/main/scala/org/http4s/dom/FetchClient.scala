@@ -31,6 +31,7 @@ import org.scalajs.dom.Headers
 import org.scalajs.dom.HttpMethod
 import org.scalajs.dom.RequestInit
 import org.scalajs.dom.{Response => FetchResponse}
+import scodec.bits.ByteVector
 
 import java.util.concurrent.TimeoutException
 import scala.concurrent.duration._
@@ -44,8 +45,8 @@ private[dom] object FetchClient {
     Resource.eval(req.toStrict(None)).flatMap { req =>
       val body = req.entity match {
         case Entity.Empty => None
-        case Entity.Strict(chunk) => Some(chunk)
-        case default => default.body.chunkAll.filter(_.nonEmpty).compile.last
+        case Entity.Strict(bytes) => Some(bytes)
+        case default => Some(default.body.compile.to(ByteVector)).filter(_.nonEmpty)
       }
 
       Resource

@@ -26,13 +26,13 @@ import cats.effect.kernel.Deferred
 import cats.effect.std.Supervisor
 import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
-import fs2.Chunk
 import org.scalajs.dom.Fetch
 import org.scalajs.dom.FetchEvent
 import org.scalajs.dom.ResponseInit
 import org.scalajs.dom.ServiceWorkerGlobalScope
 import org.scalajs.dom.{Response => DomResponse}
 import org.typelevel.vault.Key
+import scodec.bits.ByteVector
 
 object ServiceWorker {
 
@@ -78,14 +78,14 @@ object ServiceWorker {
         uri <- OptionF.fromEither(Uri.fromString(req.url))
         headers = fromDomHeaders(req.headers)
         body <- OptionT.liftF(F.fromPromise(F.delay(req.arrayBuffer())))
-        chunk = Chunk.jsArrayBuffer(body)
-        request = Request[F](method, uri, headers = headers, entity = Entity.Strict(chunk))
+        bytes = ByteVector.fromJSArrayBuffer(body)
+        request = Request[F](method, uri, headers = headers, entity = Entity.Strict(bytes))
           .withAttribute(key, FetchEventContext(event, supervisor))
         response <- routes(request)
         body <- OptionT.liftF(
           response.entity match {
             case Entity.Empty => None.pure
-            case Entity.Strict(chunk) => Some(chunk.toUint8Array).pure
+            case Entity.Strict(bytes) => Some(bytes.toUint8Array).pure
             case default =>
               default.body.chunkAll.filter(_.nonEmpty).map(_.toUint8Array).compile.last
           }
