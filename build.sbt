@@ -63,16 +63,18 @@ Global / fileServicePort := {
   import cats.data.Kleisli
   import cats.effect.IO
   import cats.effect.unsafe.implicits.global
+  import com.comcast.ip4s._
   import org.http4s._
   import org.http4s.dsl.io._
-  import org.http4s.blaze.server.BlazeServerBuilder
+  import org.http4s.ember.server.EmberServerBuilder
   import org.http4s.server.staticcontent._
   import java.net.InetSocketAddress
 
   (for {
     deferredPort <- IO.deferred[Int]
-    _ <- BlazeServerBuilder[IO]
-      .bindSocketAddress(new InetSocketAddress("localhost", 0))
+    _ <- EmberServerBuilder
+      .default[IO]
+      .withPort(port"0")
       .withHttpWebSocketApp { wsb =>
         HttpRoutes
           .of[IO] {
@@ -91,7 +93,7 @@ Global / fileServicePort := {
           }
           .orNotFound
       }
-      .resource
+      .build
       .map(_.address.getPort)
       .evalTap(deferredPort.complete(_))
       .useForever
@@ -120,16 +122,18 @@ ThisBuild / Test / jsEnv := {
   }
 }
 
-val catsEffectVersion = "3.3.13"
-val fs2Version = "3.2.9"
+val catsEffectVersion = "3.3.14"
+val fs2Version = "3.2.12"
 val http4sVersion = "1.0.0-M34"
 val scalaJSDomVersion = "2.2.0"
 val circeVersion = "0.14.2"
 val munitVersion = "0.7.29"
 val munitCEVersion = "1.0.7"
 
-lazy val root =
-  project.in(file(".")).aggregate(dom, tests, nodeJSTests).enablePlugins(NoPublishPlugin)
+lazy val root = project
+  .in(file("."))
+  .aggregate(dom, tests, nodeJSTests, artifactSizeTest)
+  .enablePlugins(NoPublishPlugin)
 
 lazy val dom = project
   .in(file("dom"))
@@ -193,6 +197,27 @@ lazy val nodeJSTests = project
   )
   .dependsOn(dom)
   .enablePlugins(ScalaJSPlugin, NoPublishPlugin)
+
+lazy val artifactSizeTest = project
+  .in(file("artifact-size-test"))
+  .settings(
+    scalaJSUseMainModuleInitializer := true,
+    libraryDependencies ++= Seq(
+      "org.http4s" %%% "http4s-circe" % http4sVersion
+    ),
+    bundleMonCheckRun := true,
+    bundleMonCommitStatus := false,
+    bundleMonPrComment := false
+  )
+  .dependsOn(dom)
+  .enablePlugins(BundleMonPlugin, NoPublishPlugin)
+
+ThisBuild / githubWorkflowBuild +=
+  WorkflowStep.Sbt(
+    List("artifactSizeTest/bundleMon"),
+    name = Some("Monitor artifact size"),
+    cond = Some("matrix.jsenv == 'Chrome'")
+  )
 
 lazy val jsdocs =
   project
