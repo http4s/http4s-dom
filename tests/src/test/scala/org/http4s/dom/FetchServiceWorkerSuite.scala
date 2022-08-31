@@ -29,10 +29,10 @@ import org.http4s.multipart.Multiparts
 import org.http4s.multipart.Part
 import org.http4s.syntax.all._
 import org.scalajs.dom.Event
+import org.scalajs.dom.ServiceWorkerRegistrationOptions
 import org.scalajs.dom.window
 
 import scala.concurrent.duration._
-import scala.scalajs.js
 
 class FetchServiceWorkerSuite extends CatsEffectSuite {
 
@@ -48,7 +48,7 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
           .serviceWorker
           .register(
             s"/${BuildInfo.workerDir}/main.js",
-            js.Dynamic.literal(scope = "/")
+            new ServiceWorkerRegistrationOptions { scope = "/" }
           )
       }
     }.both(IO.async_[Unit] { cb =>
