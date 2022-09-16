@@ -191,7 +191,7 @@ lazy val nodeJSTests = project
     libraryDependencies ++= Seq(
       "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
       "org.scalameta" %%% "munit" % munitVersion % Test,
-      "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
+      "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % Test
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
