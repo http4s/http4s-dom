@@ -127,8 +127,8 @@ val fs2Version = "3.3.0"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.3.0"
 val circeVersion = "0.14.2"
-val munitVersion = "0.7.29"
-val munitCEVersion = "1.0.7"
+val munitVersion = "1.0.0-M6"
+val munitCEVersion = "2.0.0-M3"
 
 lazy val root = project
   .in(file("."))
@@ -173,7 +173,7 @@ lazy val tests = project
     libraryDependencies ++= Seq(
       "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
       "org.scalameta" %%% "munit" % munitVersion % Test,
-      "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
+      "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % Test
     )
   )
   .dependsOn(dom)
@@ -191,7 +191,7 @@ lazy val nodeJSTests = project
     libraryDependencies ++= Seq(
       "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
       "org.scalameta" %%% "munit" % munitVersion % Test,
-      "org.typelevel" %%% "munit-cats-effect-3" % munitCEVersion % Test
+      "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % Test
     ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
