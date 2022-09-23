@@ -34,7 +34,7 @@ ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-ThisBuild / crossScalaVersions := Seq("2.12.17", "3.1.3", "2.13.8")
+ThisBuild / crossScalaVersions := Seq("2.12.17", "3.1.3", "2.13.9")
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
 
 val jsEnvs = List("Chrome", "Firefox", "NodeJS")
