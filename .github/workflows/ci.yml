@@ -29,7 +29,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest]
-        scala: [2.12.17, 3.1.3, 2.13.9]
+        scala: [2.12.17, 3.2.0, 2.13.9]
         java: [temurin@8]
         jsenv: [Chrome, Firefox, NodeJS]
         exclude:
@@ -37,9 +37,9 @@ jobs:
             jsenv: Firefox
           - scala: 2.12.17
             jsenv: NodeJS
-          - scala: 3.1.3
+          - scala: 3.2.0
             jsenv: Firefox
-          - scala: 3.1.3
+          - scala: 3.2.0
             jsenv: NodeJS
     runs-on: ${{ matrix.os }}
     steps:
@@ -181,12 +181,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (3.1.3, Chrome)
+      - name: Download target directories (3.2.0, Chrome)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-3.1.3-Chrome
+          name: target-${{ matrix.os }}-${{ matrix.java }}-3.2.0-Chrome
 
-      - name: Inflate target directories (3.1.3, Chrome)
+      - name: Inflate target directories (3.2.0, Chrome)
         run: |
           tar xf targets.tar
           rm targets.tar
