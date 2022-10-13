@@ -191,12 +191,12 @@ jobs:
           tar xf targets.tar
           rm targets.tar
 
-      - name: Download target directories (2.13.9, Chrome)
+      - name: Download target directories (2.13.10, Chrome)
         uses: actions/download-artifact@v2
         with:
-          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.9-Chrome
+          name: target-${{ matrix.os }}-${{ matrix.java }}-2.13.10-Chrome
 
-      - name: Inflate target directories (2.13.9, Chrome)
+      - name: Inflate target directories (2.13.10, Chrome)
         run: |
           tar xf targets.tar
           rm targets.tar
