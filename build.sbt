@@ -14,14 +14,6 @@
  * limitations under the License.
  */
 
-import org.openqa.selenium.WebDriver
-import org.openqa.selenium.chrome.ChromeOptions
-import org.openqa.selenium.firefox.FirefoxOptions
-import org.scalajs.jsenv.nodejs.NodeJSEnv
-import org.scalajs.jsenv.selenium.SeleniumJSEnv
-
-import JSEnv._
-
 name := "http4s-dom"
 
 ThisBuild / tlBaseVersion := "0.2"
@@ -30,33 +22,27 @@ ThisBuild / developers := List(
 )
 ThisBuild / startYear := Some(2021)
 
-ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-ThisBuild / crossScalaVersions := Seq("2.12.17", "3.2.0", "2.13.10")
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("8"))
+val scala213 = "2.13.10"
+ThisBuild / crossScalaVersions := Seq("2.12.17", scala213, "3.2.0")
+ThisBuild / scalaVersion := scala213
 
-val jsEnvs = List("Chrome", "Firefox", "NodeJS")
-ThisBuild / githubWorkflowBuildMatrixAdditions += "jsenv" -> jsEnvs
-ThisBuild / githubWorkflowBuildSbtStepPreamble += s"set Global / useJSEnv := JSEnv.$${{ matrix.jsenv }}"
-ThisBuild / githubWorkflowBuildMatrixExclusions ++= {
-  for {
-    scala <- (ThisBuild / crossScalaVersions).value.init
-    jsenv <- jsEnvs.tail
-  } yield MatrixExclude(Map("scala" -> scala, "jsenv" -> jsenv))
-}
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
+ThisBuild / tlJdkRelease := Some(8)
+
+ThisBuild / githubWorkflowBuildMatrixAdditions +=
+  "project" -> List("rootNodeJS", "rootChrome", "rootFirefox")
+ThisBuild / githubWorkflowBuildSbtStepPreamble += s"project $${{ matrix.project }}"
 
 ThisBuild / githubWorkflowBuildPreamble +=
   WorkflowStep.Use(
-    UseRef.Public("actions", "setup-node", "v2"),
-    name = Some("Setup NodeJS v18"),
+    UseRef.Public("actions", "setup-node", "v3"),
+    name = Some("Setup Node.js"),
     params = Map("node-version" -> "18"),
-    cond = Some("matrix.jsenv == 'NodeJS'")
+    cond = Some("matrix.project == 'rootNodeJS'")
   )
-
-lazy val useJSEnv = settingKey[JSEnv]("JSEnv for running Scala.js tests")
-Global / useJSEnv := Chrome
 
 lazy val fileServicePort = settingKey[Int]("Port for static file server")
 Global / fileServicePort := {
@@ -102,26 +88,6 @@ Global / fileServicePort := {
   } yield port).unsafeRunSync()
 }
 
-ThisBuild / Test / jsEnv := {
-  val config = SeleniumJSEnv
-    .Config()
-    .withMaterializeInServer(
-      "target/selenium",
-      s"http://localhost:${fileServicePort.value}/target/selenium/")
-
-  useJSEnv.value match {
-    case NodeJS => new NodeJSEnv()
-    case Chrome =>
-      val options = new ChromeOptions()
-      options.setHeadless(true)
-      new SeleniumJSEnv(options, config)
-    case Firefox =>
-      val options = new FirefoxOptions()
-      options.setHeadless(true)
-      new SeleniumJSEnv(options, config)
-  }
-}
-
 val catsEffectVersion = "3.3.14"
 val fs2Version = "3.3.0"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
@@ -132,8 +98,17 @@ val munitCEVersion = "2.0.0-M3"
 
 lazy val root = project
   .in(file("."))
-  .aggregate(dom, tests, nodeJSTests, artifactSizeTest)
+  .aggregate(dom, rootNodeJS, rootChrome, rootFirefox)
   .enablePlugins(NoPublishPlugin)
+
+lazy val rootNodeJS =
+  project.in(file(".rootNodeJS")).aggregate(dom, testsNodeJS).enablePlugins(NoPublishPlugin)
+
+lazy val rootChrome =
+  project.in(file(".rootChrome")).aggregate(dom, testsChrome).enablePlugins(NoPublishPlugin)
+
+lazy val rootFirefox =
+  project.in(file(".rootFirefox")).aggregate(dom, testsFirefox).enablePlugins(NoPublishPlugin)
 
 lazy val dom = project
   .in(file("dom"))
@@ -149,54 +124,85 @@ lazy val dom = project
   )
   .enablePlugins(ScalaJSPlugin)
 
-lazy val tests = project
-  .in(file("tests"))
-  .settings(
-    scalaJSUseMainModuleInitializer := true,
-    Test / test := {
-      if (useJSEnv.value != NodeJS)
-        (Test / test).dependsOn(Compile / fastOptJS).value
-      else
-        ()
-    },
-    buildInfoKeys := Seq[BuildInfoKey](
-      fileServicePort,
-      BuildInfoKey(
-        "workerDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory)
-          .value
-          .relativeTo((ThisBuild / baseDirectory).value)
-          .get
-          .toString
-      )
-    ),
-    buildInfoPackage := "org.http4s.dom",
-    libraryDependencies ++= Seq(
-      "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
-      "org.scalameta" %%% "munit" % munitVersion % Test,
-      "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % Test
-    )
-  )
-  .dependsOn(dom)
-  .enablePlugins(ScalaJSPlugin, BuildInfoPlugin, NoPublishPlugin)
+import org.openqa.selenium.WebDriver
+import org.openqa.selenium.chrome.ChromeOptions
+import org.openqa.selenium.firefox.FirefoxOptions
+import org.scalajs.jsenv.nodejs.NodeJSEnv
+import org.scalajs.jsenv.selenium.SeleniumJSEnv
 
-lazy val nodeJSTests = project
-  .in(file("tests-nodejs"))
+lazy val seleniumConfig = Def.setting {
+  SeleniumJSEnv
+    .Config()
+    .withMaterializeInServer(
+      "target/selenium",
+      s"http://localhost:${fileServicePort.value}/target/selenium/")
+}
+
+def configureTest(project: Project): Project =
+  project
+    .dependsOn(dom)
+    .enablePlugins(ScalaJSPlugin, NoPublishPlugin)
+    .settings(
+      libraryDependencies ++= Seq(
+        "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
+        "org.scalameta" %%% "munit" % munitVersion % Test,
+        "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % Test
+      ),
+      Compile / unmanagedSourceDirectories +=
+        (LocalRootProject / baseDirectory).value / "tests" / "src" / "main" / "scala",
+      Test / unmanagedSourceDirectories +=
+        (LocalRootProject / baseDirectory).value / "tests" / "src" / "test" / "scala",
+      testOptions += Tests.Argument("+l")
+    )
+
+def configureBrowserTest(project: Project): Project =
+  project
+    .enablePlugins(BuildInfoPlugin)
+    .settings(
+      Compile / unmanagedSourceDirectories +=
+        (LocalRootProject / baseDirectory).value / "testsBrowser" / "src" / "main" / "scala",
+      Test / unmanagedSourceDirectories +=
+        (LocalRootProject / baseDirectory).value / "testsBrowser" / "src" / "test" / "scala",
+      Compile / scalaJSUseMainModuleInitializer := true,
+      Test / test := (Test / test).dependsOn(Compile / fastOptJS).value,
+      buildInfoPackage := "org.http4s.dom",
+      buildInfoKeys := Seq[BuildInfoKey](
+        fileServicePort,
+        BuildInfoKey(
+          "workerDir" -> (Compile / fastLinkJS / scalaJSLinkerOutputDirectory)
+            .value
+            .relativeTo((ThisBuild / baseDirectory).value)
+            .get
+            .toString
+        )
+      )
+    )
+
+lazy val testsNodeJS = project
+  .configure(configureTest)
   .settings(
-    Test / test := {
-      if (useJSEnv.value == NodeJS)
-        (Test / test).value
-      else
-        ()
-    },
-    libraryDependencies ++= Seq(
-      "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
-      "org.scalameta" %%% "munit" % munitVersion % Test,
-      "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % Test
-    ),
     scalaJSLinkerConfig ~= (_.withModuleKind(ModuleKind.CommonJSModule))
   )
-  .dependsOn(dom)
-  .enablePlugins(ScalaJSPlugin, NoPublishPlugin)
+
+lazy val testsChrome = project
+  .configure(configureTest, configureBrowserTest)
+  .settings(
+    jsEnv := {
+      val options = new ChromeOptions()
+      options.setHeadless(true)
+      new SeleniumJSEnv(options, seleniumConfig.value)
+    }
+  )
+
+lazy val testsFirefox = project
+  .configure(configureTest, configureBrowserTest)
+  .settings(
+    jsEnv := {
+      val options = new FirefoxOptions()
+      options.setHeadless(true)
+      new SeleniumJSEnv(options, seleniumConfig.value)
+    }
+  )
 
 lazy val artifactSizeTest = project
   .in(file("artifact-size-test"))
