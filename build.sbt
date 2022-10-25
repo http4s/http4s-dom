@@ -30,7 +30,6 @@ ThisBuild / developers := List(
 )
 ThisBuild / startYear := Some(2021)
 
-ThisBuild / githubWorkflowTargetBranches := Seq("series/0.2")
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
