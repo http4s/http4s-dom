@@ -26,7 +26,7 @@ ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
 val scala213 = "2.13.10"
-ThisBuild / crossScalaVersions := Seq("2.12.17", scala213, "3.2.0")
+ThisBuild / crossScalaVersions := Seq("2.12.17", scala213, "3.2.1")
 ThisBuild / scalaVersion := scala213
 
 ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
