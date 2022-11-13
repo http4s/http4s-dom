@@ -222,7 +222,7 @@ ThisBuild / githubWorkflowBuild +=
   WorkflowStep.Sbt(
     List("artifactSizeTest/bundleMon"),
     name = Some("Monitor artifact size"),
-    cond = Some("matrix.jsenv == 'Chrome'")
+    cond = Some("matrix.project == 'rootNodeJS'")
   )
 
 lazy val jsdocs =
