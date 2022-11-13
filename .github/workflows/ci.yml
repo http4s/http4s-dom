@@ -92,7 +92,7 @@ jobs:
         run: sbt '++${{ matrix.scala }}' 'project ${{ matrix.project }}' doc
 
       - name: Monitor artifact size
-        if: matrix.jsenv == 'Chrome'
+        if: matrix.project == 'rootNodeJS'
         run: sbt '++${{ matrix.scala }}' 'project ${{ matrix.project }}' artifactSizeTest/bundleMon
 
       - name: Check scalafix lints
