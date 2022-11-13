@@ -47,7 +47,7 @@ object WebSocketClient {
   def apply[F[_]](implicit F: Async[F]): WSClientHighLevel[F] = new WSClientHighLevel[F] {
     def connectHighLevel(request: WSRequest): Resource[F, WSConnectionHighLevel[F]] =
       for {
-        dispatcher <- Dispatcher[F]
+        dispatcher <- Dispatcher.sequential[F]
         messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
         semaphore <- Semaphore[F](1).toResource
         error <- F.deferred[Throwable].toResource
