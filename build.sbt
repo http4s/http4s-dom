@@ -93,7 +93,7 @@ val fs2Version = "3.3.0"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.3.0"
 val circeVersion = "0.14.2"
-val munitVersion = "1.0.0-M6"
+val munitVersion = "1.0.0-M7"
 val munitCEVersion = "2.0.0-M3"
 
 lazy val root = project
