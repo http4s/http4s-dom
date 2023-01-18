@@ -19,7 +19,7 @@ package org.http4s.dom
 import munit.FunSuite
 
 class RequestStreamsSuite extends FunSuite {
-  
+
   test("firefox does not support request streams") {
     assert(!supportsRequestStreams)
   }

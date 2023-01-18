@@ -19,7 +19,7 @@ package org.http4s.dom
 import munit.FunSuite
 
 class RequestStreamsSuite extends FunSuite {
-  
+
   test("node.js supports request streams") {
     assert(supportsRequestStreams)
   }
