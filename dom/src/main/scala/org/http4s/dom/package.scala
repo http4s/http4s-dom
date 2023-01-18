@@ -69,12 +69,12 @@ package object dom {
       )
     }
 
-  private[dom] def toDomHeaders(headers: Headers): DomHeaders = {
+  private[dom] def toDomHeaders(headers: Headers, request: Boolean): DomHeaders = {
     val domHeaders = new DomHeaders()
     headers.foreach {
       case Header.Raw(name, value) =>
-        if (name != `Transfer-Encoding`.name)
-          domHeaders.append(name.toString, value)
+        val skip = request && name == `Transfer-Encoding`.name
+        if (!skip) domHeaders.append(name.toString, value)
     }
     domHeaders
   }

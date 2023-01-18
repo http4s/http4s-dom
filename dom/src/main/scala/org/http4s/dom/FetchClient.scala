@@ -74,7 +74,7 @@ private[dom] object FetchClient {
                   val init = new RequestInit {}
 
                   init.method = req.method.name.asInstanceOf[HttpMethod]
-                  init.headers = new Headers(toDomHeaders(req.headers))
+                  init.headers = new Headers(toDomHeaders(req.headers, request = true))
                   body.foreach { body =>
                     init.body = body
                     if (supportsRequestStreams)
