@@ -48,14 +48,12 @@ package object dom {
 
   implicit def blobEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, Blob] =
     EntityEncoder.entityBodyEncoder.contramap { blob =>
-      readReadableStream[F](F.delay(blob.stream()), cancelAfterUse = true)
+      readReadableStream[F](F.delay(blob.stream()))
     }
 
   implicit def readableStreamEncoder[F[_]: Async]
       : EntityEncoder[F, ReadableStream[Uint8Array]] =
-    EntityEncoder.entityBodyEncoder.contramap { rs =>
-      readReadableStream(rs.pure, cancelAfterUse = true)
-    }
+    EntityEncoder.entityBodyEncoder.contramap { rs => readReadableStream(rs.pure) }
 
   private[dom] def fromDomResponse[F[_]](response: DomResponse)(
       implicit F: Async[F]): F[Response[F]] =
@@ -64,7 +62,7 @@ package object dom {
         status = status,
         headers = fromDomHeaders(response.headers),
         body = Stream.fromOption(Option(response.body)).flatMap { rs =>
-          readReadableStream[F](rs.pure, cancelAfterUse = true)
+          readReadableStream[F](rs.pure)
         }
       )
     }
@@ -84,9 +82,8 @@ package object dom {
       headers.map { header => header(0) -> header(1) }.toList
     )
 
-  private def readReadableStream[F[_]](
-      readableStream: F[ReadableStream[Uint8Array]],
-      cancelAfterUse: Boolean
+  private[dom] def readReadableStream[F[_]](
+      readableStream: F[ReadableStream[Uint8Array]]
   )(implicit F: Async[F]): Stream[F, Byte] = {
     def read(readableStream: ReadableStream[Uint8Array]) =
       Stream
@@ -102,10 +99,7 @@ package object dom {
           }
         }
 
-    if (cancelAfterUse)
-      Stream.bracketCase(readableStream)(cancelReadableStream(_, _)).flatMap(read(_))
-    else
-      Stream.eval(readableStream).flatMap(read(_))
+    Stream.bracketCase(readableStream)(cancelReadableStream(_, _)).flatMap(read(_))
   }
 
   private[dom] def cancelReadableStream[F[_], A](
