@@ -25,28 +25,39 @@ import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
 import org.http4s.headers.`Transfer-Encoding`
-import org.scalajs.dom
+import org.scalajs.dom.Blob
+import org.scalajs.dom.Fetch
+import org.scalajs.dom.File
+import org.scalajs.dom.HttpMethod
+import org.scalajs.dom.ReadableStream
+import org.scalajs.dom.ReadableStreamType
+import org.scalajs.dom.ReadableStreamUnderlyingSource
+import org.scalajs.dom.RequestDuplex
+import org.scalajs.dom.RequestInit
+import org.scalajs.dom.{Headers => DomHeaders}
+import org.scalajs.dom.{Request => DomRequest}
+import org.scalajs.dom.{Response => DomResponse}
 
 import scala.scalajs.js
 import scala.scalajs.js.typedarray.Uint8Array
 
 package object dom {
 
-  implicit def fileEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, dom.File] =
+  implicit def fileEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, File] =
     blobEncoder.narrow
 
-  implicit def blobEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, dom.Blob] =
+  implicit def blobEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, Blob] =
     EntityEncoder.entityBodyEncoder.contramap { blob =>
       readReadableStream[F](F.delay(blob.stream()), cancelAfterUse = true)
     }
 
   implicit def readableStreamEncoder[F[_]: Async]
-      : EntityEncoder[F, dom.ReadableStream[Uint8Array]] =
+      : EntityEncoder[F, ReadableStream[Uint8Array]] =
     EntityEncoder.entityBodyEncoder.contramap { rs =>
       readReadableStream(rs.pure, cancelAfterUse = true)
     }
 
-  private[dom] def fromDomResponse[F[_]](response: dom.Response)(
+  private[dom] def fromDomResponse[F[_]](response: DomResponse)(
       implicit F: Async[F]): F[Response[F]] =
     F.fromEither(Status.fromInt(response.status)).map { status =>
       Response[F](
@@ -58,8 +69,8 @@ package object dom {
       )
     }
 
-  private[dom] def toDomHeaders(headers: Headers): dom.Headers = {
-    val domHeaders = new dom.Headers()
+  private[dom] def toDomHeaders(headers: Headers): DomHeaders = {
+    val domHeaders = new DomHeaders()
     headers.foreach {
       case Header.Raw(name, value) =>
         if (name != `Transfer-Encoding`.name)
@@ -68,16 +79,16 @@ package object dom {
     domHeaders
   }
 
-  private[dom] def fromDomHeaders(headers: dom.Headers): Headers =
+  private[dom] def fromDomHeaders(headers: DomHeaders): Headers =
     Headers(
       headers.map { header => header(0) -> header(1) }.toList
     )
 
   private def readReadableStream[F[_]](
-      readableStream: F[dom.ReadableStream[Uint8Array]],
+      readableStream: F[ReadableStream[Uint8Array]],
       cancelAfterUse: Boolean
   )(implicit F: Async[F]): Stream[F, Byte] = {
-    def read(readableStream: dom.ReadableStream[Uint8Array]) =
+    def read(readableStream: ReadableStream[Uint8Array]) =
       Stream
         .bracket(F.delay(readableStream.getReader()))(r => F.delay(r.releaseLock()))
         .flatMap { reader =>
@@ -98,7 +109,7 @@ package object dom {
   }
 
   private[dom] def cancelReadableStream[F[_], A](
-      rs: dom.ReadableStream[A],
+      rs: ReadableStream[A],
       exitCase: Resource.ExitCase
   )(implicit F: Async[F]): F[Unit] = F.fromPromise {
     F.delay {
@@ -117,13 +128,13 @@ package object dom {
   }
 
   private[dom] def toReadableStream[F[_]](in: Stream[F, Byte])(
-      implicit F: Async[F]): Resource[F, dom.ReadableStream[Uint8Array]] =
+      implicit F: Async[F]): Resource[F, ReadableStream[Uint8Array]] =
     Dispatcher.sequential.flatMap { dispatcher =>
       Resource.eval(Queue.synchronous[F, Option[Chunk[Byte]]]).flatMap { chunks =>
         in.enqueueNoneTerminatedChunks(chunks).compile.drain.background.evalMap { _ =>
           F.delay {
-            val source = new dom.ReadableStreamUnderlyingSource[Uint8Array] {
-              `type` = dom.ReadableStreamType.bytes
+            val source = new ReadableStreamUnderlyingSource[Uint8Array] {
+              `type` = ReadableStreamType.bytes
               pull = js.defined { controller =>
                 dispatcher.unsafeToPromise {
                   chunks.take.flatMap {
@@ -134,20 +145,19 @@ package object dom {
                 }
               }
             }
-            dom.ReadableStream[Uint8Array](source)
+            ReadableStream[Uint8Array](source)
           }
         }
       }
     }
 
   private[dom] lazy val supportsRequestStreams = {
-
-    val request = new dom.Request(
+    val request = new DomRequest(
       "data:a/a;charset=utf-8,",
-      new dom.RequestInit {
-        body = dom.ReadableStream()
-        method = dom.HttpMethod.POST
-        duplex = dom.RequestDuplex.half
+      new RequestInit {
+        body = ReadableStream()
+        method = HttpMethod.POST
+        duplex = RequestDuplex.half
       }
     )
 
@@ -156,8 +166,7 @@ package object dom {
     if (!supportsStreamsInRequestObjects)
       js.Promise.resolve[Boolean](false)
     else
-      dom
-        .Fetch
+      Fetch
         .fetch(request)
         .`then`[Boolean](
           _ => true,
