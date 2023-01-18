@@ -24,10 +24,10 @@ import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
+import org.http4s.headers.`Transfer-Encoding`
 import org.scalajs.dom
 
 import scala.scalajs.js
-import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.typedarray.Uint8Array
 
 package object dom {
@@ -58,17 +58,15 @@ package object dom {
       )
     }
 
-  private[dom] def toDomHeaders(headers: Headers): dom.Headers =
-    new dom.Headers(
-      headers
-        .headers
-        .view
-        .map {
-          case Header.Raw(name, value) =>
-            name.toString -> value
-        }
-        .toMap
-        .toJSDictionary)
+  private[dom] def toDomHeaders(headers: Headers): dom.Headers = {
+    val domHeaders = new dom.Headers()
+    headers.foreach {
+      case Header.Raw(name, value) =>
+        if (name != `Transfer-Encoding`.name)
+          domHeaders.append(name.toString, value)
+    }
+    domHeaders
+  }
 
   private[dom] def fromDomHeaders(headers: dom.Headers): Headers =
     Headers(
