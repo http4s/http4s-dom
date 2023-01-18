@@ -94,7 +94,7 @@ private[dom] object FetchClient {
               }
             } {
               case (r, exitCase) =>
-                OptionT.fromOption(Option(r.body)).foreachF(closeReadableStream(_, exitCase))
+                OptionT.fromOption(Option(r.body)).foreachF(cancelReadableStream(_, exitCase))
             }
             .evalMap(fromDomResponse[F])
 
