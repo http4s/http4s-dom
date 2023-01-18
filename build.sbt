@@ -120,7 +120,20 @@ lazy val dom = project
       "co.fs2" %%% "fs2-core" % fs2Version,
       "org.http4s" %%% "http4s-client" % http4sVersion,
       "org.scala-js" %%% "scalajs-dom" % scalaJSDomVersion
-    )
+    ),
+    mimaBinaryIssueFilters ++= {
+      import com.typesafe.tools.mima.core._
+      if (tlIsScala3.value)
+        Seq(
+          ProblemFilters.exclude[DirectMissingMethodProblem](
+            "org.http4s.dom.package.closeReadableStream"),
+          ProblemFilters.exclude[DirectMissingMethodProblem](
+            "org.http4s.dom.package.fromReadableStream"),
+          ProblemFilters.exclude[DirectMissingMethodProblem](
+            "org.http4s.dom.package.toDomHeaders")
+        )
+      else Seq()
+    }
   )
   .enablePlugins(ScalaJSPlugin)
 
@@ -146,7 +159,8 @@ def configureTest(project: Project): Project =
       libraryDependencies ++= Seq(
         "org.http4s" %%% "http4s-client-testkit" % http4sVersion,
         "org.scalameta" %%% "munit" % munitVersion % Test,
-        "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % Test
+        "org.typelevel" %%% "munit-cats-effect" % munitCEVersion % Test,
+        "org.typelevel" %%% "scalacheck-effect-munit" % "2.0.0-M2" % Test
       ),
       Compile / unmanagedSourceDirectories +=
         (LocalRootProject / baseDirectory).value / "tests" / "src" / "main" / "scala",

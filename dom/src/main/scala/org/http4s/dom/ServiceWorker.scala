@@ -92,7 +92,7 @@ object ServiceWorker {
         new ResponseInit {
           this.status = response.status.code
           this.statusText = response.status.reason
-          this.headers = toDomHeaders(response.headers)
+          this.headers = toDomHeaders(response.headers, request = false)
         }
       )
     }

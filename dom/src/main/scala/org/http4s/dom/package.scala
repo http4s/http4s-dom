@@ -18,16 +18,27 @@ package org.http4s
 
 import cats.effect.kernel.Async
 import cats.effect.kernel.Resource
+import cats.effect.std.Dispatcher
+import cats.effect.std.Queue
+import cats.effect.syntax.all._
 import cats.syntax.all._
+import fs2.Chunk
 import fs2.Stream
+import org.http4s.headers.`Transfer-Encoding`
 import org.scalajs.dom.Blob
+import org.scalajs.dom.Fetch
 import org.scalajs.dom.File
+import org.scalajs.dom.HttpMethod
 import org.scalajs.dom.ReadableStream
+import org.scalajs.dom.ReadableStreamType
+import org.scalajs.dom.ReadableStreamUnderlyingSource
+import org.scalajs.dom.RequestDuplex
+import org.scalajs.dom.RequestInit
 import org.scalajs.dom.{Headers => DomHeaders}
+import org.scalajs.dom.{Request => DomRequest}
 import org.scalajs.dom.{Response => DomResponse}
 
 import scala.scalajs.js
-import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.typedarray.Uint8Array
 
 package object dom {
@@ -37,16 +48,12 @@ package object dom {
 
   implicit def blobEncoder[F[_]](implicit F: Async[F]): EntityEncoder[F, Blob] =
     EntityEncoder.entityBodyEncoder.contramap { blob =>
-      Stream
-        .bracketCase {
-          F.delay(blob.stream())
-        } { case (rs, exitCase) => closeReadableStream(rs, exitCase) }
-        .flatMap(fromReadableStream[F])
+      readReadableStream[F](F.delay(blob.stream()))
     }
 
   implicit def readableStreamEncoder[F[_]: Async]
       : EntityEncoder[F, ReadableStream[Uint8Array]] =
-    EntityEncoder.entityBodyEncoder.contramap { rs => fromReadableStream(rs) }
+    EntityEncoder.entityBodyEncoder.contramap { rs => readReadableStream(rs.pure) }
 
   private[dom] def fromDomResponse[F[_]](response: DomResponse)(
       implicit F: Async[F]): F[Response[F]] =
@@ -54,43 +61,51 @@ package object dom {
       Response[F](
         status = status,
         headers = fromDomHeaders(response.headers),
-        body = Stream.fromOption(Option(response.body)).flatMap(fromReadableStream[F])
+        body = Stream.fromOption(Option(response.body)).flatMap { rs =>
+          readReadableStream[F](rs.pure)
+        }
       )
     }
 
-  private[dom] def toDomHeaders(headers: Headers): DomHeaders =
-    new DomHeaders(
-      headers
-        .headers
-        .view
-        .map {
-          case Header.Raw(name, value) =>
-            name.toString -> value
-        }
-        .toMap
-        .toJSDictionary)
+  private[dom] def toDomHeaders(headers: Headers, request: Boolean): DomHeaders = {
+    val domHeaders = new DomHeaders()
+    headers.foreach {
+      case Header.Raw(name, value) =>
+        val skip = request && name == `Transfer-Encoding`.name
+        if (!skip) domHeaders.append(name.toString, value)
+    }
+    domHeaders
+  }
 
   private[dom] def fromDomHeaders(headers: DomHeaders): Headers =
     Headers(
       headers.map { header => header(0) -> header(1) }.toList
     )
 
-  private[dom] def fromReadableStream[F[_]](rs: ReadableStream[Uint8Array])(
-      implicit F: Async[F]): Stream[F, Byte] =
-    Stream.bracket(F.delay(rs.getReader()))(r => F.delay(r.releaseLock())).flatMap { reader =>
-      Stream.unfoldChunkEval(reader) { reader =>
-        F.fromPromise(F.delay(reader.read())).map { chunk =>
-          if (chunk.done)
-            None
-          else
-            Some((fs2.Chunk.uint8Array(chunk.value), reader))
+  private[dom] def readReadableStream[F[_]](
+      readableStream: F[ReadableStream[Uint8Array]]
+  )(implicit F: Async[F]): Stream[F, Byte] = {
+    def read(readableStream: ReadableStream[Uint8Array]) =
+      Stream
+        .bracket(F.delay(readableStream.getReader()))(r => F.delay(r.releaseLock()))
+        .flatMap { reader =>
+          Stream.unfoldChunkEval(reader) { reader =>
+            F.fromPromise(F.delay(reader.read())).map { chunk =>
+              if (chunk.done)
+                None
+              else
+                Some((fs2.Chunk.uint8Array(chunk.value), reader))
+            }
+          }
         }
-      }
-    }
 
-  private[dom] def closeReadableStream[F[_], A](
+    Stream.bracketCase(readableStream)(cancelReadableStream(_, _)).flatMap(read(_))
+  }
+
+  private[dom] def cancelReadableStream[F[_], A](
       rs: ReadableStream[A],
-      exitCase: Resource.ExitCase)(implicit F: Async[F]): F[Unit] = F.fromPromise {
+      exitCase: Resource.ExitCase
+  )(implicit F: Async[F]): F[Unit] = F.fromPromise {
     F.delay {
       // Best guess: Firefox internally locks a ReadableStream after it is "drained"
       // This checks if the stream is locked before canceling it to avoid an error
@@ -98,12 +113,59 @@ package object dom {
         case Resource.ExitCase.Succeeded =>
           rs.cancel(js.undefined)
         case Resource.ExitCase.Errored(ex) =>
-          rs.cancel(ex.getLocalizedMessage())
+          rs.cancel(ex.toString())
         case Resource.ExitCase.Canceled =>
           rs.cancel(js.undefined)
       }
       else js.Promise.resolve[Unit](())
     }
-  }.void
+  }
+
+  private[dom] def toReadableStream[F[_]](in: Stream[F, Byte])(
+      implicit F: Async[F]): Resource[F, ReadableStream[Uint8Array]] =
+    Dispatcher.sequential.flatMap { dispatcher =>
+      Resource.eval(Queue.synchronous[F, Option[Chunk[Byte]]]).flatMap { chunks =>
+        in.enqueueNoneTerminatedChunks(chunks).compile.drain.background.evalMap { _ =>
+          F.delay {
+            val source = new ReadableStreamUnderlyingSource[Uint8Array] {
+              `type` = ReadableStreamType.bytes
+              pull = js.defined { controller =>
+                dispatcher.unsafeToPromise {
+                  chunks.take.flatMap {
+                    case Some(chunk) =>
+                      F.delay(controller.enqueue(chunk.toUint8Array))
+                    case None => F.delay(controller.close())
+                  }
+                }
+              }
+            }
+            ReadableStream[Uint8Array](source)
+          }
+        }
+      }
+    }
+
+  private[dom] lazy val supportsRequestStreams = {
+    val request = new DomRequest(
+      "data:a/a;charset=utf-8,",
+      new RequestInit {
+        body = ReadableStream()
+        method = HttpMethod.POST
+        duplex = RequestDuplex.half
+      }
+    )
+
+    val supportsStreamsInRequestObjects = !request.headers.has("Content-Type")
+
+    if (!supportsStreamsInRequestObjects)
+      js.Promise.resolve[Boolean](false)
+    else
+      Fetch
+        .fetch(request)
+        .`then`[Boolean](
+          _ => true,
+          (_ => false): js.Function1[Any, Boolean]
+        )
+  }
 
 }
