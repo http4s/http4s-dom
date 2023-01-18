@@ -28,7 +28,6 @@ import org.scalajs.dom
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
-import scala.scalajs.js.annotation.JSExport
 import scala.scalajs.js.typedarray.Uint8Array
 
 package object dom {
@@ -144,23 +143,28 @@ package object dom {
     }
 
   private[dom] lazy val supportsRequestStreams = {
-    var duplexAccessed = false
-    val hasContentType = new dom.Request(
-      "http://http4s.org/",
-      new AnyRef {
-        @JSExport
-        val body = dom.ReadableStream()
-        @JSExport
-        val method = dom.HttpMethod.POST
-        @JSExport
-        def duplex = {
-          duplexAccessed = true
-          dom.RequestDuplex.half
-        }
-      }.asInstanceOf[dom.RequestInit]
-    ).headers.has("Content-Type")
 
-    duplexAccessed && !hasContentType
+    val request = new dom.Request(
+      "data:a/a;charset=utf-8,",
+      new dom.RequestInit {
+        body = dom.ReadableStream()
+        method = dom.HttpMethod.POST
+        duplex = dom.RequestDuplex.half
+      }
+    )
+
+    val supportsStreamsInRequestObjects = !request.headers.has("Content-Type")
+
+    if (!supportsStreamsInRequestObjects)
+      js.Promise.resolve[Boolean](false)
+    else
+      dom
+        .Fetch
+        .fetch(request)
+        .`then`[Boolean](
+          _ => true,
+          (_ => false): js.Function1[Any, Boolean]
+        )
   }
 
 }

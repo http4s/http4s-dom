@@ -16,12 +16,13 @@
 
 package org.http4s.dom
 
-import munit.FunSuite
+import cats.effect.IO
+import munit.CatsEffectSuite
 
-class RequestStreamsSuite extends FunSuite {
+class RequestStreamsSuite extends CatsEffectSuite {
 
   test("firefox does not support request streams") {
-    assert(!supportsRequestStreams)
+    IO.fromPromise(IO(supportsRequestStreams)).map(!_).assert
   }
 
 }
