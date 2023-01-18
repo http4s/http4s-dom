@@ -28,8 +28,8 @@ import org.scalajs.dom
 
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
-import scala.scalajs.js.typedarray.Uint8Array
 import scala.scalajs.js.annotation.JSExport
+import scala.scalajs.js.typedarray.Uint8Array
 
 package object dom {
 
