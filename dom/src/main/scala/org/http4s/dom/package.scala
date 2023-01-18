@@ -29,6 +29,7 @@ import org.scalajs.dom
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 import scala.scalajs.js.typedarray.Uint8Array
+import scala.scalajs.js.annotation.JSExport
 
 package object dom {
 
@@ -144,5 +145,25 @@ package object dom {
             .concurrently(in.enqueueNoneTerminatedChunks(chunks))
         }
       }
+
+  private[dom] lazy val supportsRequestStreams = {
+    var duplexAccessed = false
+    val hasContentType = new dom.Request(
+      "http://http4s.org/",
+      new AnyRef {
+        @JSExport
+        val body = dom.ReadableStream()
+        @JSExport
+        val method = dom.HttpMethod.POST
+        @JSExport
+        def duplex = {
+          duplexAccessed = true
+          dom.RequestDuplex.half
+        }
+      }.asInstanceOf[dom.RequestInit]
+    ).headers.has("Content-Type")
+
+    duplexAccessed && !hasContentType
+  }
 
 }
