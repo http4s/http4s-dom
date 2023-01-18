@@ -20,9 +20,9 @@ import cats.effect.kernel.Async
 import cats.effect.kernel.Resource
 import cats.effect.std.Dispatcher
 import cats.effect.std.Queue
+import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.Chunk
-import fs2.Pipe
 import fs2.Stream
 import org.scalajs.dom
 
@@ -119,32 +119,29 @@ package object dom {
     }
   }
 
-  private def toReadableStream[F[_]](
-      implicit F: Async[F]): Pipe[F, Byte, dom.ReadableStream[Uint8Array]] =
-    (in: Stream[F, Byte]) =>
-      Stream.resource(Dispatcher.sequential).flatMap { dispatcher =>
-        Stream.eval(Queue.synchronous[F, Option[Chunk[Byte]]]).flatMap { chunks =>
-          Stream
-            .eval {
-              F.delay {
-                val source = new dom.ReadableStreamUnderlyingSource[Uint8Array] {
-                  `type` = dom.ReadableStreamType.bytes
-                  pull = js.defined { controller =>
-                    dispatcher.unsafeToPromise {
-                      chunks.take.flatMap {
-                        case Some(chunk) =>
-                          F.delay(controller.enqueue(chunk.toUint8Array))
-                        case None => F.delay(controller.close())
-                      }
-                    }
+  private[dom] def toReadableStream[F[_]](in: Stream[F, Byte])(
+      implicit F: Async[F]): Resource[F, dom.ReadableStream[Uint8Array]] =
+    Dispatcher.sequential.flatMap { dispatcher =>
+      Resource.eval(Queue.synchronous[F, Option[Chunk[Byte]]]).flatMap { chunks =>
+        in.enqueueNoneTerminatedChunks(chunks).compile.drain.background.evalMap { _ =>
+          F.delay {
+            val source = new dom.ReadableStreamUnderlyingSource[Uint8Array] {
+              `type` = dom.ReadableStreamType.bytes
+              pull = js.defined { controller =>
+                dispatcher.unsafeToPromise {
+                  chunks.take.flatMap {
+                    case Some(chunk) =>
+                      F.delay(controller.enqueue(chunk.toUint8Array))
+                    case None => F.delay(controller.close())
                   }
                 }
-                dom.ReadableStream[Uint8Array](source)
               }
             }
-            .concurrently(in.enqueueNoneTerminatedChunks(chunks))
+            dom.ReadableStream[Uint8Array](source)
+          }
         }
       }
+    }
 
   private[dom] lazy val supportsRequestStreams = {
     var duplexAccessed = false
