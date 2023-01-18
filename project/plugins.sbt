@@ -1,4 +1,4 @@
-val http4sVersion = "0.23.17"
+val http4sVersion = "0.23.18"
 
 enablePlugins(BuildInfoPlugin)
 buildInfoKeys += "http4sVersion" -> http4sVersion
