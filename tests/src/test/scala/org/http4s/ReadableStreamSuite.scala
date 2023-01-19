@@ -23,19 +23,34 @@ import munit.CatsEffectSuite
 import munit.ScalaCheckEffectSuite
 import org.scalacheck.effect.PropF.forAllF
 
+import scala.concurrent.duration._
+
 class ReadableStreamSuite extends CatsEffectSuite with ScalaCheckEffectSuite {
 
+  override def scalaCheckTestParameters =
+    super.scalaCheckTestParameters.withMaxSize(20)
+
   test("to/read ReadableStream") {
-    forAllF { (chunks: Vector[Vector[Byte]]) =>
-      Stream
-        .emits(chunks)
-        .map(Chunk.seq(_))
-        .unchunks
-        .through(in => Stream.resource(toReadableStream[IO](in)))
-        .flatMap(readable => readReadableStream(IO(readable)))
-        .compile
-        .toVector
-        .assertEquals(chunks.flatten)
+    forAllF {
+      (chunks: Vector[Vector[Byte]], offerSleeps: Vector[Int], takeSleeps: Vector[Int]) =>
+        def snooze(sleeps: Vector[Int]): Stream[IO, Unit] =
+          Stream
+            .emits(sleeps)
+            .ifEmpty(Stream.emit(0))
+            .repeat
+            .evalMap(d => IO.sleep((d & 3).millis))
+
+        Stream
+          .emits(chunks)
+          .map(Chunk.seq(_))
+          .zipLeft(snooze(offerSleeps))
+          .unchunks
+          .through(in => Stream.resource(toReadableStream[IO](in)))
+          .flatMap(readable => readReadableStream(IO(readable)))
+          .zipLeft(snooze(takeSleeps))
+          .compile
+          .toVector
+          .assertEquals(chunks.flatten)
     }
   }
 
