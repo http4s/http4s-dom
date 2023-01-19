@@ -21,13 +21,14 @@ import fs2.Chunk
 import fs2.Stream
 import munit.CatsEffectSuite
 import munit.ScalaCheckEffectSuite
+import org.scalacheck.Test.Parameters
 import org.scalacheck.effect.PropF.forAllF
 
 import scala.concurrent.duration._
 
 class ReadableStreamSuite extends CatsEffectSuite with ScalaCheckEffectSuite {
 
-  override def scalaCheckTestParameters =
+  override def scalaCheckTestParameters: Parameters =
     super.scalaCheckTestParameters.withMaxSize(20)
 
   test("to/read ReadableStream") {
