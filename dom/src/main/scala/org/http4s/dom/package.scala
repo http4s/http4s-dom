@@ -18,11 +18,8 @@ package org.http4s
 
 import cats.effect.kernel.Async
 import cats.effect.kernel.Resource
-import cats.effect.std.Dispatcher
-import cats.effect.std.Queue
 import cats.effect.syntax.all._
 import cats.syntax.all._
-import fs2.Chunk
 import fs2.Stream
 import org.http4s.headers.`Transfer-Encoding`
 import org.scalajs.dom.Blob
@@ -121,26 +118,69 @@ package object dom {
     }
   }
 
+  private final class Synchronizer[A] {
+
+    type TakeCallback = Either[Throwable, A] => Unit
+    type OfferCallback = Either[Throwable, TakeCallback] => Unit
+
+    private[this] var callback: AnyRef = null
+    @inline private[this] def offerCallback = callback.asInstanceOf[OfferCallback]
+    @inline private[this] def takeCallback = callback.asInstanceOf[TakeCallback]
+
+    def offer(cb: OfferCallback): Unit =
+      if (callback ne null) {
+        cb(Right(takeCallback))
+        callback = null
+      } else {
+        callback = cb
+      }
+
+    def take(cb: TakeCallback): Unit =
+      if (callback ne null) {
+        offerCallback(Right(cb))
+        callback = null
+      } else {
+        callback = cb
+      }
+  }
+
   private[dom] def toReadableStream[F[_]](in: Stream[F, Byte])(
       implicit F: Async[F]): Resource[F, ReadableStream[Uint8Array]] =
-    Dispatcher.sequential.flatMap { dispatcher =>
-      Resource.eval(Queue.synchronous[F, Option[Chunk[Byte]]]).flatMap { chunks =>
-        in.enqueueNoneTerminatedChunks(chunks).compile.drain.background.evalMap { _ =>
-          F.delay {
-            val source = new ReadableStreamUnderlyingSource[Uint8Array] {
-              `type` = ReadableStreamType.bytes
-              pull = js.defined { controller =>
-                dispatcher.unsafeToPromise {
-                  chunks.take.flatMap {
-                    case Some(chunk) =>
-                      F.delay(controller.enqueue(chunk.toUint8Array))
-                    case None => F.delay(controller.close())
-                  }
+    Resource.eval(F.delay(new Synchronizer[Option[Uint8Array]])).flatMap { synchronizer =>
+      val offers = in
+        .chunks
+        .noneTerminate
+        .foreach { chunk =>
+          F.async[Either[Throwable, Option[Uint8Array]] => Unit] { cb =>
+            F.delay(synchronizer.offer(cb)).as(Some(F.unit))
+          }.flatMap(cb => F.delay(cb(Right(chunk.map(_.toUint8Array)))))
+        }
+        .compile
+        .drain
+
+      offers.background.evalMap { _ =>
+        F.delay {
+          val source = new ReadableStreamUnderlyingSource[Uint8Array] {
+            `type` = ReadableStreamType.bytes
+            pull = js.defined { controller =>
+              new js.Promise[Unit]({ (resolve, reject) =>
+                synchronizer.take {
+                  case Right(Some(bytes)) =>
+                    controller.enqueue(bytes)
+                    resolve(())
+                    ()
+                  case Right(None) =>
+                    controller.close()
+                    resolve(())
+                    ()
+                  case Left(ex) =>
+                    reject(ex)
+                    ()
                 }
-              }
+              })
             }
-            ReadableStream[Uint8Array](source)
           }
+          ReadableStream[Uint8Array](source)
         }
       }
     }
