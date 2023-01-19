@@ -118,34 +118,35 @@ package object dom {
     }
   }
 
-  private final class Synchronizer[A] {
-
-    type TakeCallback = Either[Throwable, A] => Unit
-    type OfferCallback = Either[Throwable, TakeCallback] => Unit
-
-    private[this] var callback: AnyRef = null
-    @inline private[this] def offerCallback = callback.asInstanceOf[OfferCallback]
-    @inline private[this] def takeCallback = callback.asInstanceOf[TakeCallback]
-
-    def offer(cb: OfferCallback): Unit =
-      if (callback ne null) {
-        cb(Right(takeCallback))
-        callback = null
-      } else {
-        callback = cb
-      }
-
-    def take(cb: TakeCallback): Unit =
-      if (callback ne null) {
-        offerCallback(Right(cb))
-        callback = null
-      } else {
-        callback = cb
-      }
-  }
-
   private[dom] def toReadableStream[F[_]](in: Stream[F, Byte])(
-      implicit F: Async[F]): Resource[F, ReadableStream[Uint8Array]] =
+      implicit F: Async[F]): Resource[F, ReadableStream[Uint8Array]] = {
+
+    final class Synchronizer[A] {
+
+      type TakeCallback = Either[Throwable, A] => Unit
+      type OfferCallback = Either[Throwable, TakeCallback] => Unit
+
+      private[this] var callback: AnyRef = null
+      @inline private[this] def offerCallback = callback.asInstanceOf[OfferCallback]
+      @inline private[this] def takeCallback = callback.asInstanceOf[TakeCallback]
+
+      def offer(cb: OfferCallback): Unit =
+        if (callback ne null) {
+          cb(Right(takeCallback))
+          callback = null
+        } else {
+          callback = cb
+        }
+
+      def take(cb: TakeCallback): Unit =
+        if (callback ne null) {
+          offerCallback(Right(cb))
+          callback = null
+        } else {
+          callback = cb
+        }
+    }
+
     Resource.eval(F.delay(new Synchronizer[Option[Uint8Array]])).flatMap { synchronizer =>
       val offers = in
         .chunks
@@ -184,7 +185,7 @@ package object dom {
         }
       }
     }
-
+  }
   private[dom] lazy val supportsRequestStreams = {
     val request = new DomRequest(
       "data:a/a;charset=utf-8,",
