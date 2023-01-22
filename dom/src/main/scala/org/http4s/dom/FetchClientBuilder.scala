@@ -57,7 +57,7 @@ sealed abstract class FetchClientBuilder[F[_]] private (
     val redirect: Option[RequestRedirect],
     val referrer: Option[FetchReferrer],
     val referrerPolicy: Option[ReferrerPolicy],
-    val streamingRequests: Boolean,
+    val streamingRequests: Boolean
 )(override implicit protected val F: Async[F])
     extends BackendBuilder[F, Client[F]] {
 
@@ -147,7 +147,8 @@ sealed abstract class FetchClientBuilder[F[_]] private (
       referrer = referrer,
       referrerPolicy = referrerPolicy,
       streamingRequests = streamingRequests
-    ))
+    )
+  )
 
   override def resource: Resource[F, Client[F]] =
     Resource.pure(create)
