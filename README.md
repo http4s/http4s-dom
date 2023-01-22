@@ -18,5 +18,5 @@ It is also possible to use the `FetchClient` in Node.js v18+, which added [exper
 [![http4s-dom Scala version support](https://index.scala-lang.org/http4s/http4s-dom/http4s-dom/latest.svg)](https://index.scala-lang.org/http4s/http4s-dom/http4s-dom)
 
 ```scala
-libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.2.5"
+libraryDependencies += "org.http4s" %%% "http4s-dom" % "0.2.6"
 ```
