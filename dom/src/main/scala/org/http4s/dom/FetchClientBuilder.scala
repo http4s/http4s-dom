@@ -56,7 +56,8 @@ sealed abstract class FetchClientBuilder[F[_]] private (
     val mode: Option[RequestMode],
     val redirect: Option[RequestRedirect],
     val referrer: Option[FetchReferrer],
-    val referrerPolicy: Option[ReferrerPolicy]
+    val referrerPolicy: Option[ReferrerPolicy],
+    val streamingRequests: Boolean,
 )(override implicit protected val F: Async[F])
     extends BackendBuilder[F, Client[F]] {
 
@@ -67,7 +68,8 @@ sealed abstract class FetchClientBuilder[F[_]] private (
       mode: Option[RequestMode] = mode,
       redirect: Option[RequestRedirect] = redirect,
       referrer: Option[FetchReferrer] = referrer,
-      referrerPolicy: Option[ReferrerPolicy] = referrerPolicy
+      referrerPolicy: Option[ReferrerPolicy] = referrerPolicy,
+      streamingRequests: Boolean = streamingRequests
   ): FetchClientBuilder[F] =
     new FetchClientBuilder[F](
       requestTimeout,
@@ -76,7 +78,8 @@ sealed abstract class FetchClientBuilder[F[_]] private (
       mode,
       redirect,
       referrer,
-      referrerPolicy
+      referrerPolicy,
+      streamingRequests
     ) {}
 
   def withRequestTimeout(requestTimeout: Duration): FetchClientBuilder[F] =
@@ -124,6 +127,11 @@ sealed abstract class FetchClientBuilder[F[_]] private (
   def withDefaultReferrerPolicy: FetchClientBuilder[F] =
     withReferrerPolicyOption(None)
 
+  def withStreamingRequests: FetchClientBuilder[F] =
+    copy(streamingRequests = true)
+  def withoutStreamingRequests: FetchClientBuilder[F] =
+    copy(streamingRequests = false)
+
   /**
    * Creates a `Client`.
    */
@@ -132,14 +140,17 @@ sealed abstract class FetchClientBuilder[F[_]] private (
     FetchOptions(
       cache = cache,
       credentials = credentials,
+      integrity = None,
+      keepAlive = None,
       mode = mode,
       redirect = redirect,
       referrer = referrer,
-      referrerPolicy = referrerPolicy
+      referrerPolicy = referrerPolicy,
+      streamingRequests = streamingRequests
     ))
 
   override def resource: Resource[F, Client[F]] =
-    Resource.eval(F.delay(create))
+    Resource.pure(create)
 }
 
 object FetchClientBuilder {
@@ -155,6 +166,7 @@ object FetchClientBuilder {
       mode = None,
       redirect = None,
       referrer = None,
-      referrerPolicy = None
+      referrerPolicy = None,
+      streamingRequests = false
     ) {}
 }

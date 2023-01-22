@@ -57,6 +57,7 @@ sealed abstract class FetchOptions extends Product with Serializable {
   def redirect: Option[RequestRedirect]
   def referrer: Option[FetchReferrer]
   def referrerPolicy: Option[ReferrerPolicy]
+  def streamingRequests: Boolean
 
   def withCacheOption(cache: Option[RequestCache]): FetchOptions
   final def withCache(cache: RequestCache): FetchOptions =
@@ -106,6 +107,9 @@ sealed abstract class FetchOptions extends Product with Serializable {
   final def withoutReferrerPolicy: FetchOptions =
     withReferrerPolicyOption(None)
 
+  def withStreamingRequests: FetchOptions
+  def withoutStreamingRequests: FetchOptions
+
   /**
    * Merge Two FetchOptions. `other` is prioritized.
    */
@@ -118,20 +122,22 @@ sealed abstract class FetchOptions extends Product with Serializable {
       mode = other.mode.orElse(mode),
       redirect = other.redirect.orElse(redirect),
       referrer = other.referrer.orElse(referrer),
-      referrerPolicy = other.referrerPolicy.orElse(referrerPolicy)
+      referrerPolicy = other.referrerPolicy.orElse(referrerPolicy),
+      streamingRequests = other.streamingRequests || streamingRequests
     )
 }
 
 object FetchOptions {
   private[this] final case class FetchOptionsImpl(
-      override final val cache: Option[RequestCache],
+      override final val cache: Option[RequestCache] = None,
       override final val credentials: Option[RequestCredentials] = None,
       override final val integrity: Option[String] = None,
       override final val keepAlive: Option[Boolean] = None,
       override final val mode: Option[RequestMode] = None,
       override final val redirect: Option[RequestRedirect] = None,
       override final val referrer: Option[FetchReferrer] = None,
-      override final val referrerPolicy: Option[ReferrerPolicy] = None
+      override final val referrerPolicy: Option[ReferrerPolicy] = None,
+      override final val streamingRequests: Boolean = false
   ) extends FetchOptions {
 
     override def withCacheOption(cache: Option[RequestCache]): FetchOptions =
@@ -157,8 +163,14 @@ object FetchOptions {
     override def withReferrerPolicyOption(
         referrerPolicy: Option[ReferrerPolicy]): FetchOptions =
       copy(referrerPolicy = referrerPolicy)
+
+    override def withStreamingRequests: FetchOptions = copy(streamingRequests = true)
+    override def withoutStreamingRequests: FetchOptions = copy(streamingRequests = false)
   }
 
+  def default: FetchOptions = FetchOptionsImpl()
+
+  @deprecated("0.2.6", "Use `default` with builder methods")
   def apply(
       cache: Option[RequestCache] = None,
       credentials: Option[RequestCredentials] = None,
@@ -168,16 +180,38 @@ object FetchOptions {
       redirect: Option[RequestRedirect] = None,
       referrer: Option[FetchReferrer] = None,
       referrerPolicy: Option[ReferrerPolicy] = None
-  ): FetchOptions =
-    FetchOptionsImpl(
-      cache,
-      credentials,
-      integrity,
-      keepAlive,
-      mode,
-      redirect,
-      referrer,
-      referrerPolicy)
+  ): FetchOptions = FetchOptionsImpl(
+    cache,
+    credentials,
+    integrity,
+    keepAlive,
+    mode,
+    redirect,
+    referrer,
+    referrerPolicy
+  )
+
+  private[dom] def apply(
+      cache: Option[RequestCache],
+      credentials: Option[RequestCredentials],
+      integrity: Option[String],
+      keepAlive: Option[Boolean],
+      mode: Option[RequestMode],
+      redirect: Option[RequestRedirect],
+      referrer: Option[FetchReferrer],
+      referrerPolicy: Option[ReferrerPolicy],
+      streamingRequests: Boolean
+  ): FetchOptions = FetchOptionsImpl(
+    cache,
+    credentials,
+    integrity,
+    keepAlive,
+    mode,
+    redirect,
+    referrer,
+    referrerPolicy,
+    streamingRequests
+  )
 
   val Key: vault.Key[FetchOptions] = vault.Key.newKey[SyncIO, FetchOptions].unsafeRunSync()
 }

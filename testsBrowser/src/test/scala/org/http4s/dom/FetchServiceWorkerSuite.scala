@@ -89,6 +89,14 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
       .assertEquals("This is chunked.")
   }
 
+  test("POST a chunked body with streaming requests") {
+    FetchClientBuilder[IO]
+      .withStreamingRequests
+      .create
+      .expect[String](POST(Stream("This is chunked.").covary[IO], baseUrl / "echo"))
+      .assertEquals("This is chunked.")
+  }
+
   test("POST a multipart body") {
     Multiparts.forSync[IO].flatMap { multiparts =>
       multiparts

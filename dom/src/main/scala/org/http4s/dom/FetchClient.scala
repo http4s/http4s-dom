@@ -43,12 +43,15 @@ private[dom] object FetchClient {
       requestTimeout: Duration,
       options: FetchOptions
   )(implicit F: Async[F]): Client[F] = Client[F] { (req: Request[F]) =>
+    val requestOptions = req.attributes.lookup(FetchOptions.Key)
+    val mergedOptions = requestOptions.fold(options)(options.merge)
+
     Resource.eval(F.fromPromise(F.delay(supportsRequestStreams))).flatMap {
       supportsRequestStreams =>
         val reqBody =
           if (req.body eq EmptyBody)
             Resource.pure[F, (Request[F], Option[BodyInit])]((req, None))
-          else if (supportsRequestStreams)
+          else if (supportsRequestStreams && mergedOptions.streamingRequests)
             toReadableStream(req.body).map(Some[BodyInit](_)).tupleLeft(req)
           else
             Resource.eval {
@@ -68,9 +71,6 @@ private[dom] object FetchClient {
             Resource
               .makeCaseFull { (poll: Poll[F]) =>
                 F.delay(new AbortController()).flatMap { abortController =>
-                  val requestOptions = req.attributes.lookup(FetchOptions.Key)
-                  val mergedOptions = requestOptions.fold(options)(options.merge)
-
                   val init = new RequestInit {}
 
                   init.method = req.method.name.asInstanceOf[HttpMethod]

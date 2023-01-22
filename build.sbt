@@ -123,16 +123,24 @@ lazy val dom = project
     ),
     mimaBinaryIssueFilters ++= {
       import com.typesafe.tools.mima.core._
-      if (tlIsScala3.value)
-        Seq(
-          ProblemFilters.exclude[DirectMissingMethodProblem](
-            "org.http4s.dom.package.closeReadableStream"),
-          ProblemFilters.exclude[DirectMissingMethodProblem](
-            "org.http4s.dom.package.fromReadableStream"),
-          ProblemFilters.exclude[DirectMissingMethodProblem](
-            "org.http4s.dom.package.toDomHeaders")
-        )
-      else Seq()
+      Seq(
+        ProblemFilters.exclude[DirectMissingMethodProblem](
+          "org.http4s.dom.FetchClientBuilder.this"),
+        ProblemFilters.exclude[ReversedMissingMethodProblem]("org.http4s.dom.FetchOptions.*"),
+        ProblemFilters.exclude[Problem]("org.http4s.dom.FetchOptions#FetchOptionsImpl*"),
+        ProblemFilters.exclude[Problem]("org.http4s.dom.FetchOptions$FetchOptionsImpl*")
+      ) ++ {
+        if (tlIsScala3.value)
+          Seq(
+            ProblemFilters.exclude[DirectMissingMethodProblem](
+              "org.http4s.dom.package.closeReadableStream"),
+            ProblemFilters.exclude[DirectMissingMethodProblem](
+              "org.http4s.dom.package.fromReadableStream"),
+            ProblemFilters.exclude[DirectMissingMethodProblem](
+              "org.http4s.dom.package.toDomHeaders")
+          )
+        else Seq()
+      }
     }
   )
   .enablePlugins(ScalaJSPlugin)
