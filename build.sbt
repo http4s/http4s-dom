@@ -266,7 +266,7 @@ lazy val docs = project
     tlSiteApiPackage := Some("org.http4s.dom"),
     tlFatalWarningsInCi := false,
     mdocJS := Some(jsdocs),
-    tlSiteRelatedProjects ++= Seq(
+    tlSiteRelatedProjects := Seq(
       "calico" -> url("https://armanbilge.github.io/calico/")
     ),
     mdocVariables ++= Map(
