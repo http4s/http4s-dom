@@ -22,6 +22,20 @@ import cats.effect.Resource
 import org.http4s.client.Client
 import org.http4s.client.testkit.ClientRouteTestBattery
 
+import scala.concurrent.duration._
+
 class NodeJSFetchSuite extends ClientRouteTestBattery("FetchClient") {
   def clientResource: Resource[IO, Client[IO]] = FetchClientBuilder[IO].resource
+
+  test("Cancel an in-flight request") {
+    val address = server().addresses.head
+    client()
+      .expect[String](s"http://$address/delayed")
+      .timeoutTo(100.millis, IO.unit)
+      .timed
+      .flatMap {
+        case (duration, _) =>
+          IO(assert(clue(duration) < 500.millis))
+      }
+  }
 }

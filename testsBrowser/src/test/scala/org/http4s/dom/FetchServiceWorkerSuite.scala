@@ -110,6 +110,17 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
     }
   }
 
+  test("Cancel an in-flight request") {
+    client
+      .expect[String](GET(baseUrl / "delayed"))
+      .timeoutTo(100.millis, IO.unit)
+      .timed
+      .flatMap {
+        case (duration, _) =>
+          IO(assert(clue(duration) < 500.millis))
+      }
+  }
+
   GetRoutes.getPaths.toList.foreach {
     case (path, expected) =>
       test(s"Execute GET $path") {
