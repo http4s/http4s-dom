@@ -17,7 +17,6 @@
 package org.http4s
 package dom
 
-import cats.data.OptionT
 import cats.effect.Async
 import cats.effect.Poll
 import cats.effect.Resource
@@ -115,7 +114,7 @@ private[dom] object FetchClient {
                 }
               } {
                 case (r, exitCase) =>
-                  OptionT.fromOption(Option(r.body)).foreachF(cancelReadableStream(_, exitCase))
+                  Option(r.body).traverse_(cancelReadableStream(_, exitCase))
               }
               .evalMap(fromDomResponse[F])
 
