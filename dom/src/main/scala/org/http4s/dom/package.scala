@@ -87,7 +87,7 @@ package object dom {
         .bracket(F.delay(readableStream.getReader()))(r => F.delay(r.releaseLock()))
         .flatMap { reader =>
           Stream.unfoldChunkEval(reader) { reader =>
-            F.fromPromise(F.delay(reader.read())).map { chunk =>
+            F.fromPromiseCancelable(F.delay(reader.read()).tupleRight(F.unit)).map { chunk =>
               if (chunk.done)
                 None
               else
