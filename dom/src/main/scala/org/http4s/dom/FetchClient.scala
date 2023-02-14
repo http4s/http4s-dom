@@ -17,7 +17,6 @@
 package org.http4s
 package dom
 
-import cats.data.OptionT
 import cats.effect.Async
 import cats.effect.Poll
 import cats.effect.Resource
@@ -99,23 +98,19 @@ private[dom] object FetchClient {
                   mergedOptions.referrerPolicy.foreach(init.referrerPolicy = _)
 
                   val fetch =
-                    poll(F.fromPromise(F.delay(Fetch.fetch(req.uri.renderString, init))))
+                    F.fromPromise(F.delay(Fetch.fetch(req.uri.renderString, init)))
                       .onCancel(F.delay(abortController.abort()))
-
-                  requestTimeout match {
-                    case d: FiniteDuration =>
-                      fetch.timeoutTo(
-                        d,
+                      .timeoutTo(
+                        requestTimeout,
                         F.raiseError[FetchResponse](new TimeoutException(
-                          s"Request to ${req.uri.renderString} timed out after ${d.toMillis} ms"))
+                          s"Request to ${req.uri.renderString} timed out after ${requestTimeout.toMillis} ms"))
                       )
-                    case _ =>
-                      fetch
-                  }
+
+                  poll(fetch)
                 }
               } {
                 case (r, exitCase) =>
-                  OptionT.fromOption(Option(r.body)).foreachF(cancelReadableStream(_, exitCase))
+                  Option(r.body).traverse_(cancelReadableStream(_, exitCase))
               }
               .evalMap(fromDomResponse[F])
 
