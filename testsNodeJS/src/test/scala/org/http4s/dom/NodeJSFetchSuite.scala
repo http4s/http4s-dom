@@ -19,6 +19,8 @@ package dom
 
 import cats.effect.IO
 import cats.effect.Resource
+import fs2.Stream
+import org.http4s.Method._
 import org.http4s.client.Client
 import org.http4s.client.testkit.ClientRouteTestBattery
 
@@ -26,6 +28,16 @@ import scala.concurrent.duration._
 
 class NodeJSFetchSuite extends ClientRouteTestBattery("FetchClient") {
   def clientResource: Resource[IO, Client[IO]] = FetchClientBuilder[IO].resource
+
+  test("POST a chunked body with streaming requests") {
+    val address = server().addresses.head
+    val baseUrl = Uri.fromString(s"http://$address/").toOption.get
+    FetchClientBuilder[IO]
+      .withStreamingRequests
+      .create
+      .expect[String](POST(Stream("This is chunked.").covary[IO], baseUrl / "echo"))
+      .assertEquals("This is chunked.")
+  }
 
   test("Cancel an in-flight request") {
     val address = server().addresses.head
