@@ -34,7 +34,8 @@ final class FetchEventContext[F[_]] private (
 )
 
 object FetchEventContext {
-  val IOKey = Key.newKey[SyncIO, FetchEventContext[IO]].unsafeRunSync()
+  val IOKey: Key[FetchEventContext[IO]] =
+    Key.newKey[SyncIO, FetchEventContext[IO]].unsafeRunSync()
 
   def fromRequest(request: Request[IO]): IO[FetchEventContext[IO]] =
     IO.fromEither(request.attributes.lookup(IOKey).toRight(new NoSuchElementException))
