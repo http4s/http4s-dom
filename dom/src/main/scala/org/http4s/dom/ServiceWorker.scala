@@ -44,8 +44,8 @@ object ServiceWorker {
   /**
    * Adds a listener for `FetchEvent`. If the event is not intercepted by `routes` then it is
    * treated as an ordinary request. Additional context can be retrieved via
-   * [[FetchEventContext]] including a [[Supervisor]] for running background tasks after
-   * returning the response.
+   * [[FetchEventContext]] including a [[cats.effect.std.Supervisor]] for running background
+   * tasks after returning the response.
    */
   def addFetchEventListener[F[_]](routes: HttpRoutes[F], contextKey: Key[FetchEventContext[F]])(
       implicit F: Async[F]
@@ -71,8 +71,8 @@ object ServiceWorker {
   /**
    * Adds a listener for `FetchEvent`. If the event is not intercepted by `routes` then it is
    * treated as an ordinary request. Additional context can be retrieved via
-   * [[FetchEventContext]] including a [[Supervisor]] for running background tasks after
-   * returning the response.
+   * [[FetchEventContext]] including a [[cats.effect.std.Supervisor]] for running background
+   * tasks after returning the response.
    */
   def addFetchEventListener(routes: HttpRoutes[IO]): Resource[IO, Unit] =
     addFetchEventListener(routes, FetchEventContext.IOKey)
