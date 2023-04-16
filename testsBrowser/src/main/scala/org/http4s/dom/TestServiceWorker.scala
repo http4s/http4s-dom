@@ -16,7 +16,6 @@
 
 package org.http4s.dom
 
-import cats.effect.IO
 import cats.effect.unsafe.implicits._
 import org.scalajs.dom.ExtendableEvent
 import org.scalajs.dom.ServiceWorkerGlobalScope
@@ -35,7 +34,7 @@ object TestServiceWorker {
           )
       )
 
-    ServiceWorker.addFetchEventListener(IO.pure(TestRoutes.routes)).void.unsafeRunSync()
+    ServiceWorker.addFetchEventListener(TestRoutes.routes).useForever.unsafeRunAndForget()
   }
 
 }

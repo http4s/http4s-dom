@@ -34,10 +34,13 @@ final class FetchEventContext[F[_]] private (
 )
 
 object FetchEventContext {
-  private[dom] val IOKey = Key.newKey[SyncIO, FetchEventContext[IO]].unsafeRunSync()
+  val IOKey = Key.newKey[SyncIO, FetchEventContext[IO]].unsafeRunSync()
 
-  def apply(request: Request[IO]): IO[FetchEventContext[IO]] =
+  def fromRequest(request: Request[IO]): IO[FetchEventContext[IO]] =
     IO.fromEither(request.attributes.lookup(IOKey).toRight(new NoSuchElementException))
+
+  @deprecated("Use fromRequest", "0.2.8")
+  def apply(request: Request[IO]): IO[FetchEventContext[IO]] = fromRequest(request)
 
   private[dom] def apply[F[_]](event: FetchEvent, supervisor: Supervisor[F])(
       implicit F: Async[F]): FetchEventContext[F] =
