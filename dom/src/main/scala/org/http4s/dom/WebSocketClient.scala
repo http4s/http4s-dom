@@ -72,7 +72,11 @@ object WebSocketClient {
               cb(Right(ws))
             }
 
-            ws.onerror = e => cb(Left(js.JavaScriptException(e)))
+            ws.onerror = { e =>
+              ws.onmessage = null // prevent using dispatcher after shutdown
+              ws.onclose = null // ditto
+              cb(Left(js.JavaScriptException(e)))
+            }
             ws.onmessage = e => dispatcher.unsafeRunAndForget(messages.offer(Some(e)))
             ws.onclose =
               e => dispatcher.unsafeRunAndForget(messages.offer(None) *> close.complete(e))
