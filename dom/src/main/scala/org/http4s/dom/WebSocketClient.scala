@@ -39,6 +39,7 @@ import org.scalajs.dom.WebSocket
 import org.typelevel.ci._
 import scodec.bits.ByteVector
 
+import java.io.IOException
 import scala.scalajs.js
 import scala.scalajs.js.JSConverters._
 
@@ -67,15 +68,17 @@ object WebSocketClient {
             ws.binaryType = "arraybuffer" // the default is blob
 
             ws.onopen = { _ =>
-              ws.onerror = // replace the error handler
-                e => dispatcher.unsafeRunAndForget(error.complete(js.JavaScriptException(e)))
+              ws.onmessage = // setup message handler
+                e => dispatcher.unsafeRunAndForget(messages.offer(Some(e)))
+              ws.onclose = // replace the close handler
+                e => dispatcher.unsafeRunAndForget(messages.offer(None) *> close.complete(e))
               cb(Right(ws))
             }
 
-            ws.onerror = e => cb(Left(js.JavaScriptException(e)))
-            ws.onmessage = e => dispatcher.unsafeRunAndForget(messages.offer(Some(e)))
-            ws.onclose =
-              e => dispatcher.unsafeRunAndForget(messages.offer(None) *> close.complete(e))
+            // a close at this stage can only be an error
+            // following spec we cannot get any detail about the error
+            // https://websockets.spec.whatwg.org/#eventdef-websocket-error
+            ws.onclose = _ => cb(Left(new IOException("Connection failed")))
           }
         } {
           case (ws, exitCase) =>

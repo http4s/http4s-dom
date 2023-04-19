@@ -24,6 +24,8 @@ import org.http4s.client.websocket.WSRequest
 import org.http4s.dom.BuildInfo.fileServicePort
 import scodec.bits.ByteVector
 
+import java.io.IOException
+
 class WebSocketSuite extends CatsEffectSuite {
 
   test("send and receive frames") {
@@ -44,6 +46,14 @@ class WebSocketSuite extends CatsEffectSuite {
           WSFrame.Text("bar")
         )
       )
+  }
+
+  test("Raises IOException on connect error") {
+    WebSocketClient[IO]
+      .connectHighLevel(
+        WSRequest(Uri.fromString(s"ws://localhost:${fileServicePort}/not-ws").toOption.get))
+      .use_
+      .intercept[IOException]
   }
 
 }
