@@ -51,7 +51,6 @@ object WebSocketClient {
         dispatcher <- Dispatcher.sequential[F]
         messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
         semaphore <- Semaphore[F](1).toResource
-        error <- F.deferred[Throwable].toResource
         close <- F.deferred[CloseEvent].toResource
         ws <- Resource.makeCase {
           F.async_[WebSocket] { cb =>
@@ -120,18 +119,12 @@ object WebSocketClient {
         def closeFrame: DeferredSource[F, WSFrame.Close] =
           (close: DeferredSource[F, CloseEvent]).map(e => WSFrame.Close(e.code, e.reason))
 
-        def receive: F[Option[WSDataFrame]] = semaphore
-          .permit
-          .surround(OptionT(messages.take).map(decodeMessage).value)
-          .race(error.get.flatMap(F.raiseError[Option[WSDataFrame]]))
-          .map(_.merge)
+        def receive: F[Option[WSDataFrame]] =
+          semaphore.permit.surround(OptionT(messages.take).map(decodeMessage).value)
 
         override def receiveStream: Stream[F, WSDataFrame] =
-          Stream
-            .resource(semaphore.permit)
-            .flatMap(_ => Stream.fromQueueNoneTerminated(messages))
-            .map(decodeMessage)
-            .concurrently(Stream.exec(error.get.flatMap(F.raiseError)))
+          Stream.resource(semaphore.permit) >>
+            Stream.fromQueueNoneTerminated(messages).map(decodeMessage)
 
         private def decodeMessage(e: MessageEvent): WSDataFrame =
           e.data match {
@@ -139,14 +132,14 @@ object WebSocketClient {
             case b: js.typedarray.ArrayBuffer =>
               WSFrame.Binary(ByteVector.fromJSArrayBuffer(b))
             case _ => // this should never happen
-              throw new RuntimeException
+              throw new AssertionError
           }
 
         override def sendText(text: String): F[Unit] =
-          errorOr(F.delay(ws.send(text)))
+          F.delay(ws.send(text))
 
         override def sendBinary(bytes: ByteVector): F[Unit] =
-          errorOr(F.delay(ws.send(bytes.toJSArrayBuffer)))
+          F.delay(ws.send(bytes.toJSArrayBuffer))
 
         def send(wsf: WSDataFrame): F[Unit] =
           wsf match {
@@ -155,11 +148,6 @@ object WebSocketClient {
             case _ =>
               F.raiseError(new IllegalArgumentException("DataFrames cannot be fragmented"))
           }
-
-        private def errorOr(fu: F[Unit]): F[Unit] = error.tryGet.flatMap {
-          case Some(error) => F.raiseError(error)
-          case None => fu
-        }
 
         def sendMany[G[_]: Foldable, A <: WSDataFrame](wsfs: G[A]): F[Unit] =
           wsfs.foldMapM(send(_))
