@@ -69,8 +69,14 @@ object WebSocketClient {
             ws.onopen = { _ =>
               ws.onmessage = // setup message handler
                 e => dispatcher.unsafeRunAndForget(messages.offer(Some(e)))
+
               ws.onclose = // replace the close handler
                 e => dispatcher.unsafeRunAndForget(messages.offer(None) *> close.complete(e))
+
+              // no explicit error handler. according to spec:
+              //   1. an error event is *always* followed by a close event and
+              //   2. an error event doesn't carry any useful information *by design*
+
               cb(Right(ws))
             }
 
