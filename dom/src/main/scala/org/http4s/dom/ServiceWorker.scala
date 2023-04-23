@@ -19,10 +19,12 @@ package dom
 
 import cats.data.Kleisli
 import cats.data.OptionT
-import cats.effect.Async
 import cats.effect.IO
 import cats.effect.SyncIO
+import cats.effect.kernel.Async
 import cats.effect.kernel.Deferred
+import cats.effect.kernel.Resource
+import cats.effect.std.Dispatcher
 import cats.effect.std.Supervisor
 import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
@@ -35,16 +37,47 @@ import org.scalajs.dom.ServiceWorkerGlobalScope
 import org.scalajs.dom.{Response => DomResponse}
 import org.typelevel.vault.Key
 
+import scala.scalajs.js
+
 object ServiceWorker {
 
   /**
-   * Adds a listener for `FetchEvent`. The provided `IO` is run once to install the `routes`. If
-   * the event is not intercepted by `routes` then it is treated as an ordinary request.
-   * Additional context can be retrieved via [[FetchEventContext]] including a `Supervisor` for
-   * running background tasks.
-   * @return
-   *   an action for removing the listener.
+   * Adds a listener for `FetchEvent`. If the event is not intercepted by `routes` then it is
+   * treated as an ordinary request. Additional context can be retrieved via
+   * [[FetchEventContext]] including a [[cats.effect.std.Supervisor]] for running background
+   * tasks after returning the response.
    */
+  def addFetchEventListener[F[_]](routes: HttpRoutes[F], contextKey: Key[FetchEventContext[F]])(
+      implicit F: Async[F]
+  ): Resource[F, Unit] = Dispatcher.parallel.flatMap { dispatcher =>
+    val jsHandler: js.Function1[FetchEvent, Unit] = { event =>
+      event.respondWith {
+        dispatcher.unsafeToPromise {
+          Supervisor[F](await = true).allocated.flatMap {
+            case (supervisor, await) =>
+              val response = routesToListener(routes, supervisor, contextKey).run(event)
+              response.getOrElseF(F.fromPromise(F.delay(Fetch.fetch(event.request)))) <*
+                F.delay(event.waitUntil(dispatcher.unsafeToPromise(await)))
+          }
+        }
+      }
+    }
+
+    Resource.make {
+      F.delay(ServiceWorkerGlobalScope.self.addEventListener("fetch", jsHandler))
+    }(_ => F.delay(ServiceWorkerGlobalScope.self.removeEventListener("fetch", jsHandler)))
+  }
+
+  /**
+   * Adds a listener for `FetchEvent`. If the event is not intercepted by `routes` then it is
+   * treated as an ordinary request. Additional context can be retrieved via
+   * [[FetchEventContext]] including a [[cats.effect.std.Supervisor]] for running background
+   * tasks after returning the response.
+   */
+  def addFetchEventListener(routes: HttpRoutes[IO]): Resource[IO, Unit] =
+    addFetchEventListener(routes, FetchEventContext.IOKey)
+
+  @deprecated("Use overload that directly takes routes and returns Resource", "0.2.8")
   def addFetchEventListener(routes: IO[HttpRoutes[IO]])(
       implicit runtime: IORuntime): SyncIO[SyncIO[Unit]] = for {
     handler <- Deferred.in[SyncIO, IO, Either[Throwable, HttpRoutes[IO]]]
