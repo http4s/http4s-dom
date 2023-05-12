@@ -30,8 +30,10 @@ import cats.effect.unsafe.IORuntime
 import cats.syntax.all._
 import fs2.Chunk
 import fs2.Stream
+import org.scalajs.dom.AbortController
 import org.scalajs.dom.Fetch
 import org.scalajs.dom.FetchEvent
+import org.scalajs.dom.RequestInit
 import org.scalajs.dom.ResponseInit
 import org.scalajs.dom.ServiceWorkerGlobalScope
 import org.scalajs.dom.{Response => DomResponse}
@@ -56,7 +58,16 @@ object ServiceWorker {
           Supervisor[F](await = true).allocated.flatMap {
             case (supervisor, await) =>
               val response = routesToListener(routes, supervisor, contextKey).run(event)
-              response.getOrElseF(F.fromPromise(F.delay(Fetch.fetch(event.request)))) <*
+              def fallback = F.fromPromiseCancelable {
+                F.delay {
+                  val ctrl = new AbortController
+                  val response =
+                    Fetch.fetch(event.request, new RequestInit { signal = ctrl.signal })
+                  val cancel = F.delay(ctrl.abort())
+                  (response, cancel)
+                }
+              }
+              response.getOrElseF(fallback) <*
                 F.delay(event.waitUntil(dispatcher.unsafeToPromise(await)))
           }
         }
