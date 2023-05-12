@@ -67,7 +67,7 @@ Global / fileServicePort := {
             case Method.GET -> Root / "ws" =>
               wsb.build(identity)
             case req =>
-              fileService[IO](FileService.Config(".")).orNotFound.run(req).map { res =>
+              fileService[IO](FileService.Config[IO](".")).orNotFound.run(req).map { res =>
                 // TODO find out why mime type is not auto-inferred
                 if (req.uri.renderString.endsWith(".js"))
                   res.withHeaders(
