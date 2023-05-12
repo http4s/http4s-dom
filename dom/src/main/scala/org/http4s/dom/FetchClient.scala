@@ -98,13 +98,14 @@ private[dom] object FetchClient {
                   mergedOptions.referrerPolicy.foreach(init.referrerPolicy = _)
 
                   val fetch =
-                    F.fromPromise(F.delay(Fetch.fetch(req.uri.renderString, init)))
-                      .onCancel(F.delay(abortController.abort()))
-                      .timeoutTo(
-                        requestTimeout,
-                        F.raiseError[FetchResponse](new TimeoutException(
-                          s"Request to ${req.uri.renderString} timed out after ${requestTimeout.toMillis} ms"))
-                      )
+                    F.fromPromiseCancelable(
+                      F.delay(Fetch.fetch(req.uri.renderString, init))
+                        .tupleRight(F.delay(abortController.abort()))
+                    ).timeoutTo(
+                      requestTimeout,
+                      F.raiseError[FetchResponse](new TimeoutException(
+                        s"Request to ${req.uri.renderString} timed out after ${requestTimeout.toMillis} ms"))
+                    )
 
                   poll(fetch)
                 }
