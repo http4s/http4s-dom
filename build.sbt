@@ -25,7 +25,7 @@ ThisBuild / startYear := Some(2021)
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-val scala213 = "2.13.10"
+val scala213 = "2.13.11"
 ThisBuild / crossScalaVersions := Seq("2.12.17", scala213, "3.3.0")
 ThisBuild / scalaVersion := scala213
 
@@ -93,7 +93,7 @@ val fs2Version = "3.7.0"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.6.0"
 val circeVersion = "0.14.2"
-val munitVersion = "1.0.0-M7"
+val munitVersion = "1.0.0-M8"
 val munitCEVersion = "2.0.0-M3"
 
 lazy val root = project
