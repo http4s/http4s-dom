@@ -113,6 +113,7 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
   test("Cancel an in-flight request") {
     client
       .expect[String](GET(baseUrl / "delayed"))
+      .void
       .timeoutTo(100.millis, IO.unit)
       .timed
       .flatMap {

@@ -43,6 +43,7 @@ class NodeJSFetchSuite extends ClientRouteTestBattery("FetchClient") {
     val address = server().addresses.head
     client()
       .expect[String](s"http://$address/delayed")
+      .void
       .timeoutTo(100.millis, IO.unit)
       .timed
       .flatMap {

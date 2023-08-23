@@ -251,7 +251,7 @@ lazy val jsdocs =
   project
     .dependsOn(dom)
     .settings(
-      tlFatalWarningsInCi := false,
+      tlFatalWarnings := false,
       libraryDependencies ++= Seq(
         "org.http4s" %%% "http4s-circe" % http4sVersion,
         "io.circe" %%% "circe-generic" % circeVersion
@@ -264,11 +264,8 @@ lazy val docs = project
   .settings(
     tlSiteApiModule := Some((dom / projectID).value),
     tlSiteApiPackage := Some("org.http4s.dom"),
-    tlFatalWarningsInCi := false,
+    tlFatalWarnings := false,
     mdocJS := Some(jsdocs),
-    tlSiteRelatedProjects := Seq(
-      "calico" -> url("https://armanbilge.github.io/calico/")
-    ),
     mdocVariables ++= Map(
       "HTTP4S_VERSION" -> http4sVersion,
       "CIRCE_VERSION" -> circeVersion
@@ -289,7 +286,7 @@ lazy val docs = project
           )
         )))
     },
-    tlSiteHeliumConfig ~= {
+    tlSiteHelium ~= {
       // Actually, this *disables* auto-linking, to avoid duplicates with mdoc
       _.site.autoLinkJS()
     }
