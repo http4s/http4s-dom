@@ -43,7 +43,7 @@ class ReadableStreamSuite extends CatsEffectSuite with ScalaCheckEffectSuite {
 
         Stream
           .emits(chunks)
-          .map(Chunk.seq(_))
+          .map(Chunk.from(_))
           .zipLeft(snooze(offerSleeps))
           .unchunks
           .through(in => Stream.resource(toReadableStream[IO](in)))
