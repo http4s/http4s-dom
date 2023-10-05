@@ -25,6 +25,7 @@ import org.http4s.dom.BuildInfo.fileServicePort
 import scodec.bits.ByteVector
 
 import java.io.IOException
+import scala.concurrent.duration._
 
 class WebSocketSuite extends CatsEffectSuite {
 
@@ -54,6 +55,19 @@ class WebSocketSuite extends CatsEffectSuite {
         WSRequest(Uri.fromString(s"ws://localhost:${fileServicePort}/not-ws").toOption.get))
       .use_
       .intercept[IOException]
+  }
+
+  test("Cancel a connection attempt") {
+    WebSocketClient[IO]
+      .connectHighLevel(
+        WSRequest(Uri.fromString(s"ws://localhost:${fileServicePort}/slows").toOption.get))
+      .use_
+      .timeoutTo(100.millis, IO.unit)
+      .timed
+      .flatMap {
+        case (duration, _) =>
+          IO(assert(clue(duration) < 500.millis))
+      }
   }
 
 }

@@ -52,38 +52,44 @@ object WebSocketClient {
         messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
         mutex <- Mutex[F].toResource
         close <- F.deferred[CloseEvent].toResource
-        ws <- Resource.makeCase {
-          F.async_[WebSocket] { cb =>
-            if (request.method != Method.GET)
-              cb(Left(new IllegalArgumentException("Must be GET Request")))
+        ws <- Resource.makeCaseFull[F, WebSocket] { poll =>
+          poll {
+            F.async[WebSocket] { cb =>
+              F.delay {
+                if (request.method != Method.GET)
+                  cb(Left(new IllegalArgumentException("Must be GET Request")))
 
-            val protocols = request
-              .headers
-              .get(ci"Sec-WebSocket-Protocol")
-              .toList
-              .flatMap(_.toList.map(_.value))
+                val protocols = request
+                  .headers
+                  .get(ci"Sec-WebSocket-Protocol")
+                  .toList
+                  .flatMap(_.toList.map(_.value))
 
-            val ws = new WebSocket(request.uri.renderString, protocols.toJSArray)
-            ws.binaryType = "arraybuffer" // the default is blob
+                val ws = new WebSocket(request.uri.renderString, protocols.toJSArray)
+                ws.binaryType = "arraybuffer" // the default is blob
 
-            ws.onopen = { _ =>
-              ws.onmessage = // setup message handler
-                e => dispatcher.unsafeRunAndForget(messages.offer(Some(e)))
+                ws.onopen = { _ =>
+                  ws.onmessage = e => // setup message handler
+                    dispatcher.unsafeRunAndForget(messages.offer(Some(e)))
 
-              ws.onclose = // replace the close handler
-                e => dispatcher.unsafeRunAndForget(messages.offer(None) *> close.complete(e))
+                  ws.onclose = e => // replace the close handler
+                    dispatcher.unsafeRunAndForget(messages.offer(None) *> close.complete(e))
 
-              // no explicit error handler. according to spec:
-              //   1. an error event is *always* followed by a close event and
-              //   2. an error event doesn't carry any useful information *by design*
+                  // no explicit error handler. according to spec:
+                  //   1. an error event is *always* followed by a close event and
+                  //   2. an error event doesn't carry any useful information *by design*
 
-              cb(Right(ws))
+                  cb(Right(ws))
+                }
+
+                // a close at this stage can only be an error
+                // following spec we cannot get any detail about the error
+                // https://websockets.spec.whatwg.org/#eventdef-websocket-error
+                ws.onclose = _ => cb(Left(new IOException("Connection failed")))
+
+                Some(F.delay(ws.close()))
+              }
             }
-
-            // a close at this stage can only be an error
-            // following spec we cannot get any detail about the error
-            // https://websockets.spec.whatwg.org/#eventdef-websocket-error
-            ws.onclose = _ => cb(Left(new IOException("Connection failed")))
           }
         } {
           case (ws, exitCase) =>
