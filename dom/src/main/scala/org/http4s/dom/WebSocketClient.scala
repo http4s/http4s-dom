@@ -22,8 +22,8 @@ import cats.effect.kernel.Async
 import cats.effect.kernel.DeferredSource
 import cats.effect.kernel.Resource
 import cats.effect.std.Dispatcher
+import cats.effect.std.Mutex
 import cats.effect.std.Queue
-import cats.effect.std.Semaphore
 import cats.effect.syntax.all._
 import cats.syntax.all._
 import fs2.Stream
@@ -50,7 +50,7 @@ object WebSocketClient {
       for {
         dispatcher <- Dispatcher.sequential[F]
         messages <- Queue.unbounded[F, Option[MessageEvent]].toResource
-        semaphore <- Semaphore[F](1).toResource
+        mutex <- Mutex[F].toResource
         close <- F.deferred[CloseEvent].toResource
         ws <- Resource.makeCase {
           F.async_[WebSocket] { cb =>
@@ -126,10 +126,10 @@ object WebSocketClient {
           (close: DeferredSource[F, CloseEvent]).map(e => WSFrame.Close(e.code, e.reason))
 
         def receive: F[Option[WSDataFrame]] =
-          semaphore.permit.surround(OptionT(messages.take).map(decodeMessage).value)
+          mutex.lock.surround(OptionT(messages.take).map(decodeMessage).value)
 
         override def receiveStream: Stream[F, WSDataFrame] =
-          Stream.resource(semaphore.permit) >>
+          Stream.resource(mutex.lock) >>
             Stream.fromQueueNoneTerminated(messages).map(decodeMessage)
 
         private def decodeMessage(e: MessageEvent): WSDataFrame =
