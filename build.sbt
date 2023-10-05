@@ -55,6 +55,7 @@ Global / fileServicePort := {
   import org.http4s.ember.server.EmberServerBuilder
   import org.http4s.server.staticcontent._
   import java.net.InetSocketAddress
+  import scala.concurrent.duration._
 
   (for {
     deferredPort <- IO.deferred[Int]
@@ -66,6 +67,8 @@ Global / fileServicePort := {
           .of[IO] {
             case Method.GET -> Root / "ws" =>
               wsb.build(identity)
+            case Method.GET -> Root / "slows" =>
+              IO.sleep(3.seconds) *> wsb.build(identity)
             case req =>
               fileService[IO](FileService.Config[IO](".")).orNotFound.run(req).map { res =>
                 // TODO find out why mime type is not auto-inferred
