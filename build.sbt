@@ -92,7 +92,7 @@ Global / fileServicePort := {
 }
 
 val catsEffectVersion = "3.5.2"
-val fs2Version = "3.9.2"
+val fs2Version = "3.9.3"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.8.0"
 val circeVersion = "0.14.2"
