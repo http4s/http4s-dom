@@ -70,4 +70,18 @@ class WebSocketSuite extends CatsEffectSuite {
       }
   }
 
+  test("receive returns None when connection closes") {
+    WebSocketClient[IO]
+      .connectHighLevel(
+        WSRequest(
+          Uri.fromString(s"ws://localhost:${fileServicePort}/hello-goodbye").toOption.get)
+      )
+      .use { conn =>
+        conn.receive.assertEquals(Some(WSFrame.Text("hello"))) *>
+          conn.receive.assertEquals(None) *>
+          conn.receive.assertEquals(None) *>
+          conn.receiveStream.compile.toList.assertEquals(Nil)
+      }
+  }
+
 }
