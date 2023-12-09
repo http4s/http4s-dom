@@ -26,6 +26,7 @@ import cats.effect.std.Mutex
 import cats.effect.std.Queue
 import cats.effect.syntax.all._
 import cats.syntax.all._
+import fs2.Chunk
 import fs2.Stream
 import org.http4s.Method
 import org.http4s.client.websocket.WSClientHighLevel
@@ -132,11 +133,23 @@ object WebSocketClient {
           (close: DeferredSource[F, CloseEvent]).map(e => WSFrame.Close(e.code, e.reason))
 
         def receive: F[Option[WSDataFrame]] =
-          mutex.lock.surround(OptionT(messages.take).map(decodeMessage).value)
+          close
+            .tryGet
+            .map(_.isDefined)
+            .ifM(
+              OptionT(messages.tryTake.map(_.flatten)).map(decodeMessage).value,
+              OptionT(mutex.lock.surround(messages.take)).map(decodeMessage).value
+            )
 
         override def receiveStream: Stream[F, WSDataFrame] =
-          Stream.resource(mutex.lock) >>
-            Stream.fromQueueNoneTerminated(messages).map(decodeMessage)
+          Stream
+            .eval(close.tryGet.map(_.isDefined))
+            .ifM(
+              Stream.evalUnChunk(
+                messages.tryTakeN(None).map(m => Chunk.from(m.flatMap(_.toList)))),
+              Stream.resource(mutex.lock) >> Stream.fromQueueNoneTerminated(messages)
+            )
+            .map(decodeMessage)
 
         private def decodeMessage(e: MessageEvent): WSDataFrame =
           e.data match {

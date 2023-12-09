@@ -50,7 +50,9 @@ Global / fileServicePort := {
   import cats.effect.IO
   import cats.effect.unsafe.implicits.global
   import com.comcast.ip4s._
+  import fs2.Stream
   import org.http4s._
+  import org.http4s.websocket._
   import org.http4s.dsl.io._
   import org.http4s.ember.server.EmberServerBuilder
   import org.http4s.server.staticcontent._
@@ -69,6 +71,8 @@ Global / fileServicePort := {
               wsb.build(identity)
             case Method.GET -> Root / "slows" =>
               IO.sleep(3.seconds) *> wsb.build(identity)
+            case Method.GET -> Root / "hello-goodbye" =>
+              wsb.build(in => Stream(WebSocketFrame.Text("hello")).concurrently(in.drain))
             case req =>
               fileService[IO](FileService.Config[IO](".")).orNotFound.run(req).map { res =>
                 // TODO find out why mime type is not auto-inferred
