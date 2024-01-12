@@ -16,9 +16,9 @@
       {
         devShell = pkgs.devshell.mkShell {
           imports = [ typelevel-nix.typelevelShell ];
-          name = "fs2-dom-shell";
+          name = "http4s-dom-shell";
           typelevelShell = {
-            jdk.package = pkgs.jdk17;
+            jdk.package = pkgs.jdk21;
             nodejs.enable = true;
             nodejs.package = pkgs.nodejs;
           };
