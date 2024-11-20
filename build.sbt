@@ -95,7 +95,7 @@ Global / fileServicePort := {
   } yield port).unsafeRunSync()
 }
 
-val catsEffectVersion = "3.5.5"
+val catsEffectVersion = "3.5.6"
 val fs2Version = "3.9.3"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.8.0"
