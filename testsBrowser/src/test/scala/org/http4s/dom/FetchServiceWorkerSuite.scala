@@ -99,14 +99,13 @@ class FetchServiceWorkerSuite extends CatsEffectSuite {
 
   test("POST a multipart body") {
     Multiparts.forSync[IO].flatMap { multiparts =>
-      multiparts
-        .multipart(Vector(Part.formData[IO]("text", "This is text.")))
-        .flatMap { multipart =>
+      multiparts.multipart(Vector(Part.formData[IO]("text", "This is text."))).flatMap {
+        multipart =>
           client
             .expect[String](POST(multipart, baseUrl / "echo").withHeaders(multipart.headers))
             .map(_.contains("This is text."))
             .assert
-        }
+      }
     }
   }
 
