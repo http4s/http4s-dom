@@ -103,8 +103,10 @@ private[dom] object FetchClient {
                         .tupleRight(F.delay(abortController.abort()))
                     ).timeoutTo(
                       requestTimeout,
-                      F.raiseError[FetchResponse](new TimeoutException(
-                        s"Request to ${req.uri.renderString} timed out after ${requestTimeout.toMillis} ms"))
+                      F.defer(
+                        F.raiseError[FetchResponse](new TimeoutException(
+                          s"Request to ${req.uri.renderString} timed out after $requestTimeout"))
+                      )
                     )
 
                   poll(fetch)

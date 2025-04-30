@@ -51,4 +51,11 @@ class NodeJSFetchSuite extends ClientRouteTestBattery("FetchClient") {
           IO(assert(clue(duration) < 500.millis))
       }
   }
+
+  test("Configure client with infinite timeout") {
+    val address = server().addresses.head
+    FetchClientBuilder[IO].withRequestTimeout(Duration.Inf).resource.use { client =>
+      client.expect[Unit](s"http://$address/simple")
+    }
+  }
 }
