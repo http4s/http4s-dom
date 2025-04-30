@@ -25,11 +25,11 @@ ThisBuild / startYear := Some(2021)
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-val scala213 = "2.13.12"
-ThisBuild / crossScalaVersions := Seq("2.12.18", scala213, "3.3.1")
+val scala213 = "2.13.16"
+ThisBuild / crossScalaVersions := Seq("2.12.20", scala213, "3.3.5")
 ThisBuild / scalaVersion := scala213
 
-ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("17"))
+ThisBuild / githubWorkflowJavaVersions := Seq(JavaSpec.temurin("21"))
 ThisBuild / tlJdkRelease := Some(8)
 
 ThisBuild / githubWorkflowBuildMatrixAdditions +=
@@ -95,11 +95,11 @@ Global / fileServicePort := {
   } yield port).unsafeRunSync()
 }
 
-val catsEffectVersion = "3.5.5"
-val fs2Version = "3.9.3"
+val catsEffectVersion = "3.6.1"
+val fs2Version = "3.12.0"
 val http4sVersion = buildinfo.BuildInfo.http4sVersion // share version with build project
 val scalaJSDomVersion = "2.8.0"
-val circeVersion = "0.14.2"
+val circeVersion = "0.14.13"
 val munitVersion = "1.0.0-M10"
 val munitCEVersion = "2.0.0-M4"
 
