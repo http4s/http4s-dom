@@ -25,7 +25,7 @@ ThisBuild / startYear := Some(2021)
 ThisBuild / tlCiReleaseBranches := Seq("series/0.2")
 ThisBuild / tlSitePublishBranch := Some("series/0.2")
 
-val scala213 = "2.13.16"
+val scala213 = "2.13.17"
 ThisBuild / crossScalaVersions := Seq("2.12.20", scala213, "3.3.5")
 ThisBuild / scalaVersion := scala213
 
